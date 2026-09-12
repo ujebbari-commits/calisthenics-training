@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d10" />
+  <title>Calisthenics Tracker</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">ANYTIME ICHIGAYA · CALISTHENICS</p>
+      <h1>Training Tracker</h1>
+    </div>
+    <button id="themeBtn" class="icon-btn" type="button" aria-label="テーマ切替">◐</button>
+  </header>
+
+  <main class="shell">
+    <section class="hero card">
+      <div>
+        <p class="muted" id="todayLabel"></p>
+        <h2 id="todayTitle">今日のメニュー</h2>
+        <p id="todaySummary"></p>
+      </div>
+      <div class="hero-actions">
+        <button id="startTodayBtn" class="primary">今日のメニューを開く</button>
+        <button id="mobilityBtn" class="secondary">モビリティだけ</button>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat card"><span>完了セッション</span><strong id="sessionCount">0</strong></article>
+      <article class="stat card"><span>今週</span><strong id="weekCount">0 / 4</strong></article>
+      <article class="stat card"><span>連続週</span><strong id="streakCount">0</strong></article>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div><p class="eyebrow">WEEKLY PLAN</p><h2>週4メニュー</h2></div>
+        <span class="pill">初心者 → 本格カリステニクス</span>
+      </div>
+      <div id="planGrid" class="plan-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div><p class="eyebrow">SKILLS</p><h2>スキルツリー</h2></div>
+        <button id="editBaselineBtn" class="text-btn">基準値を編集</button>
+      </div>
+      <div id="skillsGrid" class="skills-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div><p class="eyebrow">HISTORY</p><h2>トレーニング履歴</h2></div>
+        <button id="exportBtn" class="text-btn">JSON書き出し</button>
+      </div>
+      <div id="history"></div>
+    </section>
+  </main>
+
+  <dialog id="workoutDialog" class="dialog">
+    <form method="dialog" class="dialog-shell" id="workoutForm">
+      <div class="dialog-head">
+        <div><p class="eyebrow" id="workoutCode"></p><h2 id="workoutTitle"></h2><p class="muted" id="workoutDesc"></p></div>
+        <button class="icon-btn" value="cancel" aria-label="閉じる">×</button>
+      </div>
+      <div id="exerciseList" class="exercise-list"></div>
+      <label class="notes-label">今日のメモ<textarea id="workoutNotes" rows="3" placeholder="フォーム、痛み、できたことなど"></textarea></label>
+      <div class="dialog-actions">
+        <button type="button" id="resetChecksBtn" class="secondary">チェックをリセット</button>
+        <button type="button" id="completeWorkoutBtn" class="primary">完了して記録</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="baselineDialog" class="dialog">
+    <form method="dialog" class="dialog-shell" id="baselineForm">
+      <div class="dialog-head">
+        <div><p class="eyebrow">BASELINE</p><h2>現在の基準値</h2><p class="muted">分からない項目は 0 でOK。月1回くらい更新。</p></div>
+        <button class="icon-btn" value="cancel">×</button>
+      </div>
+      <div class="form-grid">
+        <label>懸垂（回）<input name="pullups" type="number" min="0" step="1"></label>
+        <label>ディップス（回）<input name="dips" type="number" min="0" step="1"></label>
+        <label>腕立て（回）<input name="pushups" type="number" min="0" step="1"></label>
+        <label>デッドハング（秒）<input name="deadHang" type="number" min="0" step="5"></label>
+        <label>壁倒立（秒）<input name="handstand" type="number" min="0" step="5"></label>
+        <label>L-sit（秒）<input name="lsit" type="number" min="0" step="1"></label>
+      </div>
+      <button type="button" id="saveBaselineBtn" class="primary full">保存</button>
+    </form>
+  </dialog>
+
+  <dialog id="timerDialog" class="timer-dialog">
+    <div class="timer-box">
+      <p class="eyebrow">REST TIMER</p>
+      <div id="timerValue">01:30</div>
+      <div class="timer-actions">
+        <button data-seconds="60">1:00</button><button data-seconds="90">1:30</button><button data-seconds="120">2:00</button><button data-seconds="180">3:00</button>
+      </div>
+      <button id="timerClose" class="secondary full">閉じる</button>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
