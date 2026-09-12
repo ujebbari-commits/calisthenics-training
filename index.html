@@ -53,6 +53,25 @@
     </section>
 
     <section class="card">
+      <div class="section-head progress-head">
+        <div><p class="eyebrow">PROGRESS</p><h2>種目別の推移</h2></div>
+        <div class="progress-controls">
+          <label>種目
+            <select id="progressExerciseSelect"></select>
+          </label>
+          <label>表示
+            <select id="progressMetricSelect">
+              <option value="best">ベストセット / 最長</option>
+              <option value="total">合計</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="progressSummary" class="chart-stats"></div>
+      <div id="progressChart" class="chart-wrap"></div>
+    </section>
+
+    <section class="card">
       <div class="section-head">
         <div><p class="eyebrow">HISTORY</p><h2>トレーニング履歴</h2></div>
         <button id="exportBtn" class="text-btn">JSON書き出し</button>
@@ -67,10 +86,11 @@
         <div><p class="eyebrow" id="workoutCode"></p><h2 id="workoutTitle"></h2><p class="muted" id="workoutDesc"></p></div>
         <button class="icon-btn" value="cancel" aria-label="閉じる">×</button>
       </div>
+      <p class="entry-help">各セットの実績を入力してください。回数種目は回数、静止種目は秒、ウォームアップ等は分で記録します。入力するとその種目は自動で完了扱いになります。</p>
       <div id="exerciseList" class="exercise-list"></div>
       <label class="notes-label">今日のメモ<textarea id="workoutNotes" rows="3" placeholder="フォーム、痛み、できたことなど"></textarea></label>
       <div class="dialog-actions">
-        <button type="button" id="resetChecksBtn" class="secondary">チェックをリセット</button>
+        <button type="button" id="resetChecksBtn" class="secondary">入力をリセット</button>
         <button type="button" id="completeWorkoutBtn" class="primary">完了して記録</button>
       </div>
     </form>
