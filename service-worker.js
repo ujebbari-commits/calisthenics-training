@@ -1,4 +1,4 @@
-const CACHE='calisthenics-v10';
+const CACHE='calisthenics-v11';
 const ASSETS=[
   './',
   './index.html',
@@ -8,8 +8,7 @@ const ASSETS=[
   './app-v4.js?v=20260912-4',
   './manifest-v3.webmanifest',
   './launcher-c-v3-192.png',
-  './launcher-c-v3-512.png',
-  './launcher-c-v3.svg'
+  './launcher-c-v3-512.png'
 ];
 
 self.addEventListener('install',e=>{
