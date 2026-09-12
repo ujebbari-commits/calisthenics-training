@@ -62,7 +62,6 @@
           <label>表示
             <select id="progressMetricSelect">
               <option value="best">ベストセット / 最長</option>
-              <option value="total">合計</option>
             </select>
           </label>
         </div>
@@ -86,7 +85,7 @@
         <div><p class="eyebrow" id="workoutCode"></p><h2 id="workoutTitle"></h2><p class="muted" id="workoutDesc"></p></div>
         <button class="icon-btn" value="cancel" aria-label="閉じる">×</button>
       </div>
-      <p class="entry-help">各セットの実績を入力してください。回数種目は回数、静止種目は秒、ウォームアップ等は分で記録します。入力するとその種目は自動で完了扱いになります。</p>
+      <p class="entry-help">種目が終わったらチェックするだけでOKです。記録を残したい種目だけ、その日の「ベストセット」を1回入力してください。毎セット入力する必要はありません。</p>
       <div id="exerciseList" class="exercise-list"></div>
       <label class="notes-label">今日のメモ<textarea id="workoutNotes" rows="3" placeholder="フォーム、痛み、できたことなど"></textarea></label>
       <div class="dialog-actions">
@@ -126,5 +125,6 @@
   </dialog>
 
   <script src="app.js"></script>
+  <script src="app-v3.js"></script>
 </body>
 </html>
