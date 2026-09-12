@@ -1,4 +1,4 @@
-const CACHE='calisthenics-v8';
+const CACHE='calisthenics-v9';
 const ASSETS=[
   './',
   './index.html',
@@ -6,11 +6,13 @@ const ASSETS=[
   './app.js?v=20260912-4',
   './app-v3.js?v=20260912-4',
   './app-v4.js?v=20260912-4',
-  './manifest.webmanifest?v=20260912-4',
+  './manifest.webmanifest?v=20260912-5',
   './icon.svg',
   './icon-180.png',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png'
 ];
 
 self.addEventListener('install',e=>{
