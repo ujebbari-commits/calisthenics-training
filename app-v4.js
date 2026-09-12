@@ -94,8 +94,8 @@
           <a href="${openUrl}" target="_blank" rel="noopener noreferrer">Google画像で開く</a>
         </div>
         <div class="google-images-frame-wrap">
-          <div class="google-images-placeholder">説明を開くと画像検索を読み込みます。</div>
-          <iframe class="google-images-frame" title="${name} のGoogle画像検索" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="google-images-placeholder">Google画像検索を読み込んでいます...</div>
+          <iframe class="google-images-frame" title="${name} のGoogle画像検索" loading="lazy" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
         </div>
         <p class="google-images-note">Google側の埋め込み制限で表示されない場合は「Google画像で開く」を使ってください。</p>`;
       details.appendChild(box);
@@ -115,10 +115,16 @@
   }
 
   window.openWorkout = function(key) {
-    originalOpenWorkout(key);
+    // app-v3 normally calls showModal(), which puts the dialog in the browser top layer.
+    // Temporarily suppress that call so Yomitan can remain above this panel.
+    const realShowModal = workoutDialog.showModal;
+    workoutDialog.showModal = () => {};
+    try {
+      originalOpenWorkout(key);
+    } finally {
+      workoutDialog.showModal = realShowModal;
+    }
 
-    // app-v3 opens the native modal top layer. Close it immediately and reopen as a
-    // normal positioned dialog so browser-extension popups such as Yomitan can render above it.
     if (workoutDialog.open) workoutDialog.close();
     workoutDialog.classList.add('yomitan-friendly-dialog');
     attachGoogleImageBoxes();
