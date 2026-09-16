@@ -1,7 +1,7 @@
 {
   "id":"./",
-  "name":"Calisthenics Training Tracker",
-  "short_name":"Calisthenics",
+  "name":"Training Quest",
+  "short_name":"Training Quest",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",
