@@ -7,70 +7,76 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <title>Calisthenics Tracker</title>
+  <title>Training Quest</title>
   <link rel="manifest" href="manifest-v3.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="launcher-c-v3-192.png" />
   <link rel="shortcut icon" type="image/png" href="launcher-c-v3-192.png" />
   <link rel="apple-touch-icon" sizes="192x192" href="launcher-c-v3-192.png" />
-  <link rel="stylesheet" href="styles.css?v=20260912-4" />
+  <link rel="stylesheet" href="styles.css?v=20260916-1" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">ANYTIME ICHIGAYA · CALISTHENICS</p>
-      <h1>Training Tracker</h1>
+      <p class="eyebrow">MUSCLE BUILD · LEVEL 1–15</p>
+      <h1>Training Quest</h1>
     </div>
     <button id="themeBtn" class="icon-btn" type="button" aria-label="テーマ切替">◐</button>
   </header>
 
   <main class="shell">
     <section class="hero card">
-      <div>
+      <div class="hero-copy">
+        <div class="level-line"><span id="heroLevel" class="level-badge">LV 1</span><span id="heroPhase" class="pill">Foundation</span></div>
         <p class="muted" id="todayLabel"></p>
         <h2 id="todayTitle">今日のメニュー</h2>
         <p id="todaySummary"></p>
+        <div class="xp-row"><div class="xp-track"><span id="xpFill"></span></div><strong id="xpText">0 / 100 XP</strong></div>
+        <p class="level-hint" id="levelHint"></p>
       </div>
       <div class="hero-actions">
         <button id="startTodayBtn" class="primary">今日のメニューを開く</button>
-        <button id="mobilityBtn" class="secondary">モビリティだけ</button>
+        <button id="recoveryBtn" class="secondary">回復日メニュー</button>
+        <button id="levelUpBtn" class="secondary" disabled>レベルアップ</button>
       </div>
     </section>
 
     <section class="stats-grid">
-      <article class="stat card"><span>完了セッション</span><strong id="sessionCount">0</strong></article>
+      <article class="stat card"><span>現在レベル</span><strong id="currentLevelStat">1 / 15</strong></article>
+      <article class="stat card"><span>このLvの完了</span><strong id="levelSessionCount">0 / 4</strong></article>
       <article class="stat card"><span>今週</span><strong id="weekCount">0 / 4</strong></article>
       <article class="stat card"><span>連続週</span><strong id="streakCount">0</strong></article>
+    </section>
+
+    <section class="card level-summary-card">
+      <div class="section-head">
+        <div><p class="eyebrow">CURRENT PROGRAM</p><h2 id="levelTitle">Lv1 · Reboot</h2></div>
+        <span class="pill" id="levelDuration">目安 1〜2週間</span>
+      </div>
+      <p id="levelDescription" class="level-description"></p>
+      <div id="levelRules" class="rule-grid"></div>
     </section>
 
     <section class="card">
       <div class="section-head">
         <div><p class="eyebrow">WEEKLY PLAN</p><h2>週4メニュー</h2></div>
-        <span class="pill">初心者 → 本格カリステニクス</span>
+        <span class="pill">長い有酸素なし</span>
       </div>
       <div id="planGrid" class="plan-grid"></div>
     </section>
 
     <section class="card">
       <div class="section-head">
-        <div><p class="eyebrow">SKILLS</p><h2>スキルツリー</h2></div>
-        <button id="editBaselineBtn" class="text-btn">基準値を編集</button>
+        <div><p class="eyebrow">LEVEL MAP</p><h2>Lv1 → Lv15</h2></div>
+        <button id="resetLevelBtn" class="text-btn" type="button">レベル設定</button>
       </div>
-      <div id="skillsGrid" class="skills-grid"></div>
+      <p class="muted section-intro">各レベルは1〜2週間を想定。4回のメインセッション＋最低7日で次レベルが解放されます。</p>
+      <div id="levelGrid" class="level-grid"></div>
     </section>
 
     <section class="card">
       <div class="section-head progress-head">
-        <div><p class="eyebrow">PROGRESS</p><h2>種目別の推移</h2></div>
-        <div class="progress-controls">
-          <label>種目
-            <select id="progressExerciseSelect"></select>
-          </label>
-          <label>表示
-            <select id="progressMetricSelect">
-              <option value="best">ベストセット / 最長</option>
-            </select>
-          </label>
-        </div>
+        <div><p class="eyebrow">PROGRESS</p><h2>ベスト記録の推移</h2></div>
+        <label class="select-label">種目<select id="progressExerciseSelect"></select></label>
       </div>
       <div id="progressSummary" class="chart-stats"></div>
       <div id="progressChart" class="chart-wrap"></div>
@@ -85,53 +91,35 @@
     </section>
   </main>
 
-  <dialog id="workoutDialog" class="dialog">
-    <form method="dialog" class="dialog-shell" id="workoutForm">
+  <div id="workoutBackdrop" class="overlay-backdrop" hidden></div>
+  <section id="workoutPanel" class="workout-panel" hidden aria-modal="false" aria-labelledby="workoutTitle">
+    <div class="panel-shell">
       <div class="dialog-head">
         <div><p class="eyebrow" id="workoutCode"></p><h2 id="workoutTitle"></h2><p class="muted" id="workoutDesc"></p></div>
-        <button class="icon-btn" value="cancel" aria-label="閉じる">×</button>
+        <button id="closeWorkoutBtn" class="icon-btn" type="button" aria-label="閉じる">×</button>
       </div>
-      <p class="entry-help">種目が終わったらチェックするだけでOKです。記録を残したい種目だけ、その日の「ベストセット」を1回入力してください。毎セット入力する必要はありません。</p>
+      <p class="entry-help">トレーニング中はスマホを触らなくてOK。メニューを見るだけで進め、最後に残したい種目だけ「ベストセット」を入力してください。</p>
       <div id="exerciseList" class="exercise-list"></div>
-      <label class="notes-label">今日のメモ<textarea id="workoutNotes" rows="3" placeholder="フォーム、痛み、できたことなど"></textarea></label>
+      <label class="notes-label">今日のメモ<textarea id="workoutNotes" rows="3" placeholder="痛み、フォーム、次回気をつけることなど"></textarea></label>
       <div class="dialog-actions">
-        <button type="button" id="resetChecksBtn" class="secondary">入力をリセット</button>
-        <button type="button" id="completeWorkoutBtn" class="primary">完了して記録</button>
+        <button type="button" id="closeWorkoutBottomBtn" class="secondary">閉じる</button>
+        <button type="button" id="completeWorkoutBtn" class="primary">セッション完了 +25 XP</button>
       </div>
-    </form>
-  </dialog>
-
-  <dialog id="baselineDialog" class="dialog">
-    <form method="dialog" class="dialog-shell" id="baselineForm">
-      <div class="dialog-head">
-        <div><p class="eyebrow">BASELINE</p><h2>現在の基準値</h2><p class="muted">分からない項目は 0 でOK。月1回くらい更新。</p></div>
-        <button class="icon-btn" value="cancel">×</button>
-      </div>
-      <div class="form-grid">
-        <label>懸垂（回）<input name="pullups" type="number" min="0" step="1"></label>
-        <label>ディップス（回）<input name="dips" type="number" min="0" step="1"></label>
-        <label>腕立て（回）<input name="pushups" type="number" min="0" step="1"></label>
-        <label>デッドハング（秒）<input name="deadHang" type="number" min="0" step="5"></label>
-        <label>壁倒立（秒）<input name="handstand" type="number" min="0" step="5"></label>
-        <label>L-sit（秒）<input name="lsit" type="number" min="0" step="1"></label>
-      </div>
-      <button type="button" id="saveBaselineBtn" class="primary full">保存</button>
-    </form>
-  </dialog>
-
-  <dialog id="timerDialog" class="timer-dialog">
-    <div class="timer-box">
-      <p class="eyebrow">REST TIMER</p>
-      <div id="timerValue">01:30</div>
-      <div class="timer-actions">
-        <button data-seconds="60">1:00</button><button data-seconds="90">1:30</button><button data-seconds="120">2:00</button><button data-seconds="180">3:00</button>
-      </div>
-      <button id="timerClose" class="secondary full">閉じる</button>
     </div>
-  </dialog>
+  </section>
 
-  <script src="app.js?v=20260912-4"></script>
-  <script src="app-v3.js?v=20260912-4"></script>
-  <script src="app-v4.js?v=20260912-4"></script>
+  <div id="levelBackdrop" class="overlay-backdrop" hidden></div>
+  <section id="levelPanel" class="small-panel" hidden aria-modal="false">
+    <div class="panel-shell">
+      <div class="dialog-head"><div><p class="eyebrow">LEVEL CONTROL</p><h2>レベル設定</h2></div><button id="closeLevelBtn" class="icon-btn">×</button></div>
+      <p class="muted">通常はレベルアップボタンを使ってください。ここでは過去レベルへの戻しや、必要な場合の手動設定ができます。</p>
+      <label class="select-label wide">現在レベル<select id="manualLevelSelect"></select></label>
+      <button id="applyManualLevelBtn" class="primary full">このレベルに設定</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js?v=20260916-1"></script>
 </body>
 </html>
