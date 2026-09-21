@@ -240,7 +240,20 @@ function openWorkout(key){
   document.querySelector('#workoutNotes').value='';
   document.querySelector('#completeWorkoutBtn').textContent=key==='R'?'回復日を記録':'セッション完了 +25 XP';
   document.querySelector('#workoutBackdrop').hidden=false;document.querySelector('#workoutPanel').hidden=false;document.body.style.overflow='hidden';
-  document.querySelectorAll('.exercise-guide').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open)return;const box=d.querySelector('.google-images-box');if(!box||box.dataset.loaded)return;const f=box.querySelector('iframe'),p=box.querySelector('.google-images-placeholder');f.src=googleImageUrl(box.dataset.query,true);f.hidden=false;p.hidden=true;box.dataset.loaded='1';}));
+  document.querySelectorAll('.exercise-guide').forEach(d=>{
+    const loadImages=()=>{
+      const box=d.querySelector('.google-images-box');if(!box||box.dataset.loaded)return;
+      const f=box.querySelector('iframe'),p=box.querySelector('.google-images-placeholder');
+      if(!f)return;
+      f.src=googleImageUrl(box.dataset.query,true);
+      f.hidden=false;
+      if(p)p.hidden=true;
+      box.dataset.loaded='1';
+    };
+    d.addEventListener('toggle',()=>{if(d.open)loadImages();});
+    const summary=d.querySelector('summary');
+    if(summary)summary.addEventListener('click',()=>setTimeout(()=>{if(d.open)loadImages();},0));
+  });
 }
 function closeWorkout(){document.querySelector('#workoutBackdrop').hidden=true;document.querySelector('#workoutPanel').hidden=true;document.body.style.overflow='';}
 function completeWorkout(){
