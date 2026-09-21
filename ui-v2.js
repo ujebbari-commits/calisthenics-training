@@ -46,7 +46,7 @@
         ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
       ]},
       {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['assisted_dip','secondary'],['assisted_chin','secondary']
+        ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['chest_press','secondary'],['lat_pulldown','secondary']
       ]},
       {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
         ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core']
@@ -54,7 +54,7 @@
     ],
     5:[
       {key:'A',code:'PUSH',title:'Push · 胸 / 肩 / 三頭',desc:'押す筋肉を集中して鍛える日。',items:[
-        ['chest_press','main'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['assisted_dip','secondary'],['triceps_machine','accessory']
+        ['chest_press','main'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'PULL',title:'Pull · 背中 / 二頭 / 握力',desc:'引く筋肉と懸垂の土台を鍛える日。',items:[
         ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
@@ -63,7 +63,7 @@
         ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core']
       ]},
       {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['assisted_chin','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+        ['pec_fly','main'],['chest_supported_row','main'],['lat_pulldown','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
         ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core']
