@@ -216,11 +216,19 @@
     exerciseHistoryCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISE LOG</p><h2>種目記録</h2></div></div><div id="exerciseLogHistory"></div>';
     shell.appendChild(exerciseHistoryCard);
 
+    const settingsCard=document.createElement('section');
+    settingsCard.className='card app-settings-card';
+    settingsCard.dataset.appSection='settings';
+    settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
+      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、重量Mode/Lv、重量目標、記録、履歴、週間プログラムを共有用JSONにまとめます。</p></div>'+
+      '<button type="button" id="shareTrainingDataBtn" class="primary">ChatGPTに共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
+    shell.appendChild(settingsCard);
+
     const nav=document.createElement('nav');
     nav.id='simpleTabs';
     nav.className='simple-tabs';
     nav.innerHTML=[
-      ['today','今日'],['exercises','種目'],['program','プログラム'],['weights','重量目標'],['progress','進捗'],['history','履歴']
+      ['today','今日'],['exercises','種目'],['program','プログラム'],['weights','重量目標'],['progress','進捗'],['history','履歴'],['settings','設定']
     ].map(([id,label])=>'<button type="button" data-simple-tab="'+id+'">'+label+'</button>').join('');
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
@@ -274,11 +282,91 @@
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
+    const shareBtn=document.querySelector('#shareTrainingDataBtn');
+    if(shareBtn)shareBtn.onclick=shareTrainingData;
     showTab(ui.tab||'today');
   }
 
+  function buildTrainingShareData(){
+    const exerciseSnapshot=exercises.map(def=>{
+      const target=targets[def.id]||{};
+      const weighted=def.weight&&def.goalDirection!=='down'&&Number.isFinite(Number(def.goalKg));
+      const status=weighted?modeStatus(def):null;
+      return {
+        id:def.id,
+        name:def.name,
+        bodyPart:def.label,
+        target:{weight:target.weight,reps:target.reps,sets:target.sets},
+        weightProgress:status?{
+          mode:status.mode,
+          level:status.level,
+          currentLevelWeightKg:status.current,
+          modeMaxWeightKg:status.max,
+          progressPercent:status.pct
+        }:null,
+        bestQualifiedWeightKg:weighted?achievedWeight(def):null,
+        baseLv10GoalKg:Number.isFinite(Number(def.goalKg))?Number(def.goalKg):null
+      };
+    });
+    return {
+      schema:'training-chatgpt-share.v1',
+      generatedAt:new Date().toISOString(),
+      purpose:'ChatGPTに現在のトレーニングアプリ情報を共有し、今後のメニュー・負荷・進捗相談に利用するためのデータ',
+      appState:{
+        programMode:Number(state.programMode||4),
+        todayMenuKey:ui.todayMenuKey||null,
+        level:state.level??null,
+        unlockedLevel:state.unlockedLevel??null
+      },
+      weeklyProgram:activeCatalogProgram().map(day=>({
+        key:day.key,
+        code:day.code,
+        title:day.title,
+        description:day.desc,
+        exercises:day.items.map(([id,role])=>({id,name:exerciseById(id)?.name||id,role}))
+      })),
+      exercises:exerciseSnapshot,
+      exerciseHistory,
+      sessionHistory:Array.isArray(state.history)?state.history:[],
+      weightGoalOverrides:weightGoals,
+      exerciseModes
+    };
+  }
+
+  async function shareTrainingData(){
+    const status=document.querySelector('#shareTrainingDataStatus');
+    const setStatus=msg=>{if(status)status.textContent=msg;};
+    const payload=buildTrainingShareData();
+    const text=JSON.stringify(payload,null,2);
+    const date=new Date().toISOString().slice(0,10);
+    const file=new File([text],'training-chatgpt-share-'+date+'.json',{type:'application/json'});
+    try{
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({
+          title:'Training app data for ChatGPT',
+          text:'Trainingアプリの現在データです。',
+          files:[file]
+        });
+        setStatus('共有シートを開きました。ChatGPTを選択してください。');
+        return;
+      }
+    }catch(error){
+      if(error?.name==='AbortError'){setStatus('共有をキャンセルしました。');return;}
+    }
+    try{
+      await navigator.clipboard.writeText(text);
+      setStatus('共有APIが使えないため、JSONをクリップボードにコピーしました。ChatGPTに貼り付けてください。');
+    }catch{
+      const blob=new Blob([text],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=file.name;a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      setStatus('共有APIを使えなかったため、共有用JSONを保存しました。ChatGPTに添付してください。');
+    }
+  }
+
   function showTab(id){
-    if(!['today','exercises','program','weights','progress','history'].includes(id))id='today';
+    if(!['today','exercises','program','weights','progress','history','settings'].includes(id))id='today';
     if(id==='program'){ui.openProgramDay=null;ui.openProgramExercise=null;}
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
@@ -752,8 +840,8 @@
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values>span:not(.exercise-weight-progress){border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}.exercise-values .exercise-weight-level{font-weight:900}.exercise-values .exercise-weight-level.muted-level{color:var(--muted);border-color:var(--line);font-weight:700}.fold-indicator{min-width:28px;text-align:center}
     .simple-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 13px 13px}.simple-editor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:2px}.save-record-status{margin-right:auto;color:var(--accent);font-size:.78rem}.save-record-status.error{color:var(--danger)}.simple-field,.simple-static{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.simple-field>div{display:flex;align-items:center;gap:6px}.simple-field input{width:100%;font-weight:800}.simple-field em{font-style:normal}.simple-static strong{color:var(--text);font-size:1rem}
     .weight-achievement{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:20px}.weight-achievement[hidden]{display:none!important}.achievement-card{position:relative;z-index:2;width:min(420px,92vw);text-align:center;background:var(--surface);border:1px solid var(--accent);border-radius:22px;padding:28px 22px;box-shadow:0 20px 80px rgba(0,0,0,.45);animation:achievementPop .55s cubic-bezier(.2,.9,.2,1.25)}.achievement-level{font-size:3rem;font-weight:950;color:var(--accent);line-height:1;margin:8px 0}.achievement-card h2{margin:8px 0}.achievement-detail{color:var(--muted)}.achievement-close{min-width:120px;margin-top:10px}.achievement-burst{position:absolute;inset:50% auto auto 50%;width:1px;height:1px;z-index:1}.achievement-burst i{position:absolute;width:8px;height:8px;border-radius:2px;background:var(--accent);transform:rotate(calc(var(--i)*20deg)) translateY(0);opacity:0}.weight-achievement.play .achievement-burst i{animation:achievementBurst .9s ease-out forwards;animation-delay:calc(var(--i)*12ms)}@keyframes achievementPop{0%{transform:scale(.65);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes achievementBurst{0%{opacity:1;transform:rotate(calc(var(--i)*20deg)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(calc(var(--i)*20deg)) translateY(calc(-1 * var(--r) * 5)) scale(.4)}}
-    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-grid{display:grid;gap:12px}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-card.open{grid-column:1/-1}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
-    @media(max-width:700px){.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.catalog-program-exercise-card.open{grid-column:auto}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}}
+    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-grid{display:grid;gap:12px}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.settings-share-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px}.settings-share-box strong{font-size:1.02rem}.settings-share-box p{margin:4px 0 0;font-size:.8rem}.settings-share-status{grid-column:1/-1;color:var(--accent)!important;min-height:1.2em}.settings-share-box .primary{white-space:nowrap}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
+    @media(max-width:700px){.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}.settings-share-box{grid-template-columns:1fr}.settings-share-box .primary{width:100%}}
   `;
   document.head.appendChild(style);
 
