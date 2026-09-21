@@ -6,17 +6,17 @@
   const UI_KEY='training.ui.v2';
 
   const exercises=[
-    {id:'seated_leg_press',name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。',muscle:'legs',label:'脚',weight:true,reps:'8–12'},
-    {id:'leg_extension',name:'レッグエクステンション',desc:'太ももの前側。膝を伸ばすマシン。',muscle:'legs',label:'太もも',weight:true,reps:'8–12'},
-    {id:'ab_crunch',name:'アブドミナルクランチ',desc:'座ってかがみながら肘側のパッドを押す腹筋マシン。',muscle:'core',label:'腹',weight:true,reps:'8–12'},
-    {id:'rotary_torso',name:'ロータリートルソー',desc:'膝を台に乗せ、上半身を固定して左右へ動かす。',muscle:'obliques',label:'脇腹',weight:true,reps:'8–12'},
-    {id:'lat_pulldown',name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引く。',muscle:'back',label:'背中',weight:true,reps:'8–12'},
+    {id:'seated_leg_press',name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。',muscle:'legs',label:'脚',weight:true,reps:'12'},
+    {id:'leg_extension',name:'レッグエクステンション',desc:'太ももの前側。膝を伸ばすマシン。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
+    {id:'ab_crunch',name:'アブドミナルクランチ',desc:'座ってかがみながら肘側のパッドを押す腹筋マシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
+    {id:'rotary_torso',name:'ロータリートルソー',desc:'膝を台に乗せ、上半身を固定して左右へ動かす。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
+    {id:'lat_pulldown',name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引く。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'dead_hang',name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,reps:'20–40秒'},
-    {id:'pec_fly',name:'ペックフライ',desc:'腕を開いた位置から前へ閉じる。',muscle:'chest',label:'胸',weight:true,reps:'8–12'},
-    {id:'chest_press',name:'チェストプレス',desc:'座って前へ押す。',muscle:'chest',label:'胸',weight:true,reps:'8–12'},
-    {id:'shoulder_press',name:'ショルダープレス',desc:'座って頭上へ押す。',muscle:'shoulders',label:'肩',weight:true,reps:'8–12'},
-    {id:'chest_supported_row',name:'チェストサポート・ロー',desc:'体を斜めに固定し、左右のバーを後ろへ引く。',muscle:'back',label:'背中',weight:true,reps:'8–12'},
-    {id:'high_row_machine',name:'ハイロー / プルダウン系',desc:'座って頭上の左右バーを下へ引く。',muscle:'back',label:'背中',weight:true,reps:'8–12'}
+    {id:'pec_fly',name:'ペックフライ',desc:'腕を開いた位置から前へ閉じる。',muscle:'chest',label:'胸',weight:true,reps:'12'},
+    {id:'chest_press',name:'チェストプレス',desc:'座って前へ押す。',muscle:'chest',label:'胸',weight:true,reps:'12'},
+    {id:'shoulder_press',name:'ショルダープレス',desc:'座って頭上へ押す。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
+    {id:'chest_supported_row',name:'チェストサポート・ロー',desc:'体を斜めに固定し、左右のバーを後ろへ引く。',muscle:'back',label:'背中',weight:true,reps:'12'},
+    {id:'high_row_machine',name:'ハイロー / プルダウン系',desc:'座って頭上の左右バーを下へ引く。',muscle:'back',label:'背中',weight:true,reps:'12'}
   ];
 
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
@@ -26,7 +26,7 @@
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
-    targets[e.id]={weight:old.weight??'',reps:old.reps||e.reps,sets:Math.max(1,Number(old.sets||3))};
+    const migratedReps=(old.reps==='8–12'||old.reps==='8-12')?e.reps:(old.reps||e.reps); targets[e.id]={weight:old.weight??'',reps:migratedReps,sets:Math.max(1,Number(old.sets||3))};
   }
   const saveTargets=()=>localStorage.setItem(TARGET_KEY,JSON.stringify(targets));
   const saveUi=()=>localStorage.setItem(UI_KEY,JSON.stringify(ui));
