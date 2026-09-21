@@ -72,6 +72,22 @@
 
   function exerciseById(id){return exercises.find(e=>e.id===id)}
   function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
+  const exercisePartFilters=[
+    ['all','すべて'],
+    ['chest','胸'],
+    ['back','背中'],
+    ['shoulders','肩'],
+    ['arms','腕'],
+    ['core','腹'],
+    ['legs','脚'],
+    ['grip','握力'],
+    ['cardio','有酸素']
+  ];
+  function matchesExercisePart(e,part){
+    if(!part||part==='all')return true;
+    if(part==='core')return e.muscle==='core'||e.muscle==='obliques';
+    return e.muscle===part;
+  }
 
   function applyCatalogTemplates(){
     if(typeof templates==='undefined')return;
@@ -93,7 +109,7 @@
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
   const legacy=read('trainingQuest.exerciseTargets.v1',{});
   const targets=read(TARGET_KEY,{});
-  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null,exerciseSearch:''});
+  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null,exerciseSearch:'',exercisePart:'all'});
   let exerciseHistory=read(EXERCISE_HISTORY_KEY,[]);
   if(!Array.isArray(exerciseHistory)) exerciseHistory=[];
 
@@ -151,7 +167,7 @@
     const ex=document.createElement('section');
     ex.className='card exercise-manager';
     ex.dataset.appSection='exercises';
-    ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><label class="exercise-search"><span>検索</span><input id="exerciseSearchInput" type="search" placeholder="種目名・部位で検索" value="'+esc(ui.exerciseSearch||'')+'"></label><p id="exerciseSearchCount" class="muted exercise-search-count"></p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
+    ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><label class="exercise-search"><span>検索</span><input id="exerciseSearchInput" type="search" placeholder="種目名・部位で検索" value="'+esc(ui.exerciseSearch||'')+'"></label><div id="exercisePartFilters" class="exercise-part-filters">'+exercisePartFilters.map(([id,label])=>'<button type="button" data-exercise-part="'+id+'">'+label+'</button>').join('')+'</div><p id="exerciseSearchCount" class="muted exercise-search-count"></p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
     shell.appendChild(ex);
 
     const exerciseHistoryCard=document.createElement('section');
@@ -174,6 +190,15 @@
 
     const searchInput=document.querySelector('#exerciseSearchInput');
     if(searchInput)searchInput.addEventListener('input',()=>{ui.exerciseSearch=searchInput.value;saveUi();renderExercises();});
+    const partFilters=document.querySelector('#exercisePartFilters');
+    if(partFilters)partFilters.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-exercise-part]');
+      if(!btn)return;
+      const selected=btn.dataset.exercisePart;
+      ui.exercisePart=(ui.exercisePart===selected&&selected!=='all')?'all':selected;
+      saveUi();
+      renderExercises();
+    });
     applyCatalogTemplates();
     renderCatalogProgram();
     const modeSelect=document.querySelector('#programModeSelect');
@@ -197,9 +222,14 @@
     const root=document.querySelector('#simpleExerciseList');
     if(!root)return;
     const q=String(ui.exerciseSearch||'').trim().toLocaleLowerCase('ja');
-    const filtered=!q?exercises:exercises.filter(e=>[e.name,e.label,e.desc,e.muscle].some(v=>String(v||'').toLocaleLowerCase('ja').includes(q)));
+    const part=ui.exercisePart||'all';
+    const filtered=exercises.filter(e=>{
+      const searchMatch=!q||[e.name,e.label,e.desc,e.muscle].some(v=>String(v||'').toLocaleLowerCase('ja').includes(q));
+      return searchMatch&&matchesExercisePart(e,part);
+    });
+    document.querySelectorAll('[data-exercise-part]').forEach(b=>b.classList.toggle('active',b.dataset.exercisePart===part));
     const count=document.querySelector('#exerciseSearchCount');
-    if(count)count.textContent=q?filtered.length+' / '+exercises.length+'種目':'全'+exercises.length+'種目';
+    if(count)count.textContent=(q||part!=='all')?filtered.length+' / '+exercises.length+'種目':'全'+exercises.length+'種目';
     root.innerHTML=filtered.map(e=>{
       const t=targets[e.id],open=ui.openExercise===e.id;
       const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
@@ -250,6 +280,7 @@
     ui.tab='exercises';
     ui.openExercise=id;
     ui.exerciseSearch='';
+    ui.exercisePart='all';
     saveUi();
     const input=document.querySelector('#exerciseSearchInput');
     if(input)input.value='';
@@ -432,7 +463,7 @@
     .simple-tabs{position:sticky;top:0;z-index:80;max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:8px;overflow-x:auto;background:var(--bg)}
     .simple-tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 14px;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
     .simple-tabs button.active{background:var(--accent);color:#07110c;border-color:var(--accent)}
-    .legacy-program-hidden{display:none!important}.simple-head{margin-bottom:6px}.exercise-search{display:grid;gap:6px;margin-top:10px;color:var(--muted);font-size:.76rem}.exercise-search input{width:100%;font-size:1rem}.exercise-search-count{margin:8px 0 0;font-size:.76rem}.simple-exercise-list{display:grid;gap:8px;margin-top:10px}
+    .legacy-program-hidden{display:none!important}.simple-head{margin-bottom:6px}.exercise-search{display:grid;gap:6px;margin-top:10px;color:var(--muted);font-size:.76rem}.exercise-search input{width:100%;font-size:1rem}.exercise-part-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.exercise-part-filters button{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:999px;padding:7px 11px;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}.exercise-part-filters button.active{background:var(--accent);border-color:var(--accent);color:#07110c}.exercise-search-count{margin:8px 0 0;font-size:.76rem}.simple-exercise-list{display:grid;gap:8px;margin-top:10px}
     .simple-exercise{border:1px solid var(--line);background:var(--surface2);border-radius:14px;overflow:hidden}.simple-exercise.open{border-color:var(--accent)}
     .simple-exercise-summary{width:100%;border:0;background:transparent;color:var(--text);padding:13px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;text-align:left;cursor:pointer}
     .exercise-title-line{display:flex;gap:10px;align-items:center;min-width:0}.exercise-title-line strong{display:block}.exercise-title-line small{display:block;color:var(--muted);margin-top:2px}
