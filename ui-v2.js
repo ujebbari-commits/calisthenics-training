@@ -6,6 +6,7 @@
   const UI_KEY='training.ui.v2';
   const EXERCISE_HISTORY_KEY='training.exerciseHistory.v1';
   const WEIGHT_GOAL_KEY='training.weightGoals.v1';
+  const WEIGHT_ACHIEVEMENT_KEY='training.weightAchievements.v1';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
@@ -114,6 +115,7 @@
   let exerciseHistory=read(EXERCISE_HISTORY_KEY,[]);
   if(!Array.isArray(exerciseHistory)) exerciseHistory=[];
   const weightGoals=read(WEIGHT_GOAL_KEY,{});
+  const weightAchievements=read(WEIGHT_ACHIEVEMENT_KEY,{});
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
@@ -123,6 +125,7 @@
   const saveUi=()=>localStorage.setItem(UI_KEY,JSON.stringify(ui));
   const saveExerciseHistory=()=>localStorage.setItem(EXERCISE_HISTORY_KEY,JSON.stringify(exerciseHistory));
   const saveWeightGoals=()=>localStorage.setItem(WEIGHT_GOAL_KEY,JSON.stringify(weightGoals));
+  const saveWeightAchievements=()=>localStorage.setItem(WEIGHT_ACHIEVEMENT_KEY,JSON.stringify(weightAchievements));
   saveTargets();
 
   const automaticRecommendedKey=typeof recommendedKey==='function'?recommendedKey:null;
@@ -165,6 +168,13 @@
     const history=shell.querySelector('#history')?.closest('.card');
 
     [hero,stats].filter(Boolean).forEach(x=>x.dataset.appSection='today');
+    if(summary)summary.classList.add('legacy-training-level-hidden');
+    document.querySelector('#heroLevel')?.classList.add('legacy-training-level-hidden');
+    document.querySelector('#heroPhase')?.classList.add('legacy-training-level-hidden');
+    document.querySelector('.xp-row')?.classList.add('legacy-training-level-hidden');
+    document.querySelector('#levelHint')?.classList.add('legacy-training-level-hidden');
+    document.querySelector('#currentLevelStat')?.closest('.stat')?.classList.add('legacy-training-level-hidden');
+    document.querySelector('#levelSessionCount')?.closest('.stat')?.classList.add('legacy-training-level-hidden');
     [summary,plan,level].filter(Boolean).forEach(x=>x.dataset.appSection='program');
     if(plan)plan.classList.add('legacy-program-hidden');
     if(level)level.classList.add('legacy-level-map-hidden');
@@ -177,7 +187,7 @@
     const weightGoalCard=document.createElement('section');
     weightGoalCard.className='card weight-goals-card';
     weightGoalCard.dataset.appSection='program';
-    weightGoalCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEIGHT LEVELS</p><h2>重量目標 · Lv1〜15</h2></div><span class="pill">正しいフォーム · 12回 × 3セット</span></div><p class="muted weight-goal-intro">Lv15を長期目標として、Lv1=30%から5%刻みで設定。履歴の12回×3セット達成重量から現在Lvを自動判定します。目標kgはマシン差に合わせて編集できます。</p><div id="weightGoalsGrid" class="weight-goals-grid"></div>';
+    weightGoalCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEIGHT LEVELS</p><h2>重量目標 · Lv1〜10</h2></div><span class="pill">正しいフォーム · 12回 × 3セット</span></div><p class="muted weight-goal-intro">Lv10を長期目標として、Lv1=55%から5%刻み。目標重量は自由に調整でき、12回×3セットの保存記録から各種目のLvを自動判定します。</p><div id="weightGoalsGrid" class="weight-goals-grid"></div>';
     if(level)level.parentNode.insertBefore(weightGoalCard,level);else shell.appendChild(weightGoalCard);
 
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
@@ -341,7 +351,7 @@
     return {text:'あと '+formatNumber(goal-current)+' kg',pct:Math.max(0,Math.min(99,(current/goal)*100)),done:false};
   }
 
-  const weightLevelPercents=[30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+  const weightLevelPercents=[55,60,65,70,75,80,85,90,95,100];
   function roundToMachineStep(v){return Math.max(2.5,Math.round(v/2.5)*2.5)}
   function levelMilestones(goal){
     return weightLevelPercents.map(p=>roundToMachineStep(goal*p/100));
@@ -355,7 +365,7 @@
   }
   function nextLevelWeight(level,goal){
     const ms=levelMilestones(goal);
-    if(level>=15)return ms[14];
+    if(level>=10)return ms[9];
     return ms[Math.max(0,level)];
   }
 
@@ -374,11 +384,11 @@
       const currentText=current==null?'—':formatNumber(current)+' kg';
       return '<article class="weight-goal-item '+(status.done?'done':'')+'" data-goal-exercise="'+def.id+'">'+
         '<div class="weight-goal-head">'+badge(def)+'<div><strong>'+esc(def.name)+'</strong><small>現在達成 '+currentText+'</small></div><span class="weight-level-badge">Lv'+level+'</span></div>'+
-        '<div class="weight-level-next"><span>'+(level>=15?'Lv15達成':'次 Lv'+(level+1))+'</span><strong>'+formatNumber(nextWeight)+' kg</strong></div>'+
-        '<label class="weight-goal-input"><span>Lv15目標</span><div><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(Number.isFinite(goal)?esc(goal):'')+'" placeholder="kg"><em>kg</em></div></label>'+
-        '<div class="weight-goal-progress"><span style="width:'+Math.max(0,Math.min(100,level/15*100))+'%"></span></div>'+
-        '<div class="weight-level-scale"><span>Lv1 '+formatNumber(milestones[0])+'kg</span><span>Lv8 '+formatNumber(milestones[7])+'kg</span><span>Lv15 '+formatNumber(milestones[14])+'kg</span></div>'+
-        '<p class="weight-goal-status">'+(current==null?'12回×3セットの達成記録なし':(level>=15?'Lv15達成':'Lv'+level+' · 次まで '+formatNumber(Math.max(0,nextWeight-current))+' kg'))+'</p>'+
+        '<div class="weight-level-next"><span>'+(level>=10?'Lv10達成':'次 Lv'+(level+1))+'</span><strong>'+formatNumber(nextWeight)+' kg</strong></div>'+
+        '<label class="weight-goal-input"><span>Lv10目標</span><div><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(Number.isFinite(goal)?esc(goal):'')+'" placeholder="kg"><em>kg</em></div></label>'+
+        '<div class="weight-goal-progress"><span style="width:'+Math.max(0,Math.min(100,level/10*100))+'%"></span></div>'+
+        '<div class="weight-level-scale"><span>Lv1 '+formatNumber(milestones[0])+'kg</span><span>Lv5 '+formatNumber(milestones[4])+'kg</span><span>Lv10 '+formatNumber(milestones[9])+'kg</span></div>'+
+        '<p class="weight-goal-status">'+(current==null?'12回×3セットの達成記録なし':(level>=10?'Lv10達成':'Lv'+level+' · 次まで '+formatNumber(Math.max(0,nextWeight-current))+' kg'))+'</p>'+
       '</article>';
     }).join('');
 
@@ -428,6 +438,44 @@
     requestAnimationFrame(()=>document.querySelector('[data-exercise-id="'+id+'"]')?.scrollIntoView({behavior:'smooth',block:'center'}));
   }
 
+  function exerciseGoal(def){
+    const raw=weightGoals[def.id];
+    const v=raw===''||raw==null?Number(def.goalKg):Number(raw);
+    return Number.isFinite(v)&&v>0?v:null;
+  }
+
+  function currentExerciseLevel(def){
+    const goal=exerciseGoal(def);
+    return goal?achievedLevel(achievedWeight(def),goal):0;
+  }
+
+  function ensureAchievementPopup(){
+    if(document.querySelector('#weightAchievement'))return;
+    const el=document.createElement('div');
+    el.id='weightAchievement';
+    el.className='weight-achievement';
+    el.hidden=true;
+    el.innerHTML='<div class="achievement-burst" aria-hidden="true"></div><div class="achievement-card"><p class="eyebrow">ACHIEVEMENT UNLOCKED</p><div class="achievement-level"></div><h2 class="achievement-name"></h2><p class="achievement-detail"></p><button type="button" class="primary achievement-close">OK</button></div>';
+    document.body.appendChild(el);
+    el.querySelector('.achievement-close').onclick=()=>{el.hidden=true;};
+    el.onclick=e=>{if(e.target===el)el.hidden=true;};
+  }
+
+  function showWeightAchievement(def,oldLevel,newLevel,weight){
+    ensureAchievementPopup();
+    const el=document.querySelector('#weightAchievement');
+    const jumped=Math.max(1,newLevel-oldLevel);
+    el.querySelector('.achievement-level').textContent='Lv '+newLevel;
+    el.querySelector('.achievement-name').textContent=def.name;
+    el.querySelector('.achievement-detail').textContent=formatNumber(weight)+' kg · 12回 × 3セット達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
+    const burst=el.querySelector('.achievement-burst');
+    burst.innerHTML=Array.from({length:18},(_,i)=>'<i style="--i:'+i+';--r:'+(18+(i%7)*5)+'px"></i>').join('');
+    el.hidden=false;
+    el.classList.remove('play');
+    void el.offsetWidth;
+    el.classList.add('play');
+  }
+
   function saveExerciseRecord(box){
     const id=box?.dataset.exerciseId;
     const def=exercises.find(x=>x.id===id);
@@ -445,6 +493,7 @@
       return;
     }
 
+    const oldLevel=(def.weight&&def.goalDirection!=='down'&&Number.isFinite(Number(def.goalKg)))?currentExerciseLevel(def):0;
     const now=new Date();
     exerciseHistory.push({
       id:String(Date.now())+'-'+Math.random().toString(36).slice(2,7),
@@ -462,6 +511,16 @@
     renderExerciseProgress();
     renderExerciseHistory();
     renderWeightGoals();
+    if(def.weight&&def.goalDirection!=='down'&&Number(t.sets)>=3&&metric>=12){
+      const newLevel=currentExerciseLevel(def);
+      const notified=Number(weightAchievements[def.id]||0);
+      const baseline=Math.max(oldLevel,notified);
+      if(newLevel>baseline){
+        weightAchievements[def.id]=newLevel;
+        saveWeightAchievements();
+        showWeightAchievement(def,baseline,newLevel,weight);
+      }
+    }
   }
 
   function parseMetric(value){
@@ -598,7 +657,7 @@
 
   const style=document.createElement('style');
   style.textContent=`
-    .ui-redundant{display:none!important}
+    .ui-redundant,.legacy-training-level-hidden{display:none!important}
     .app-section-hidden{display:none!important}
     .simple-tabs{position:sticky;top:0;z-index:80;max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:8px;overflow-x:auto;background:var(--bg)}
     .simple-tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 14px;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
@@ -611,6 +670,7 @@
     .muscle-badge svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.muscle-badge .muscle-mark{fill:currentColor;stroke:none}
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values span{border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}
     .simple-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 13px 13px}.simple-editor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:2px}.save-record-status{margin-right:auto;color:var(--accent);font-size:.78rem}.save-record-status.error{color:var(--danger)}.simple-field,.simple-static{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.simple-field>div{display:flex;align-items:center;gap:6px}.simple-field input{width:100%;font-weight:800}.simple-field em{font-style:normal}.simple-static strong{color:var(--text);font-size:1rem}
+    .weight-achievement{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:20px}.weight-achievement[hidden]{display:none!important}.achievement-card{position:relative;z-index:2;width:min(420px,92vw);text-align:center;background:var(--surface);border:1px solid var(--accent);border-radius:22px;padding:28px 22px;box-shadow:0 20px 80px rgba(0,0,0,.45);animation:achievementPop .55s cubic-bezier(.2,.9,.2,1.25)}.achievement-level{font-size:3rem;font-weight:950;color:var(--accent);line-height:1;margin:8px 0}.achievement-card h2{margin:8px 0}.achievement-detail{color:var(--muted)}.achievement-close{min-width:120px;margin-top:10px}.achievement-burst{position:absolute;inset:50% auto auto 50%;width:1px;height:1px;z-index:1}.achievement-burst i{position:absolute;width:8px;height:8px;border-radius:2px;background:var(--accent);transform:rotate(calc(var(--i)*20deg)) translateY(0);opacity:0}.weight-achievement.play .achievement-burst i{animation:achievementBurst .9s ease-out forwards;animation-delay:calc(var(--i)*12ms)}@keyframes achievementPop{0%{transform:scale(.65);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes achievementBurst{0%{opacity:1;transform:rotate(calc(var(--i)*20deg)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(calc(var(--i)*20deg)) translateY(calc(-1 * var(--r) * 5)) scale(.4)}}
     .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-grid{display:grid;gap:12px}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.catalog-program-exercise{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:9px;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}.catalog-program-exercise>span:last-child{min-width:0}.catalog-program-exercise strong,.catalog-program-exercise small{display:block}.catalog-program-exercise small{color:var(--muted);font-size:.7rem;margin-top:2px}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
     @media(max-width:700px){.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}}
   `;
