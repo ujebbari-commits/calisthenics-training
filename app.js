@@ -223,7 +223,8 @@ function renderHistory(){
 function googleImageUrl(q,embedded=false){const p=new URLSearchParams({tbm:'isch',q,hl:'ja'});if(embedded)p.set('igu','1');return `https://www.google.com/search?${p}`;}
 function guideHTML(name){
   const d=exerciseDB[name]||{muscle:'',guide:'フォームを崩さず、痛みのない範囲で行います。',q:`${name} exercise proper form`};
-  return `<details class="exercise-guide"><summary>やり方・用語説明</summary><p>${esc(d.guide)}</p><div class="google-images-box" data-query="${esc(d.q)}"><div class="google-images-head"><div><strong>Google Images</strong><span>${esc(d.q)}</span></div><a href="${googleImageUrl(d.q)}" target="_blank" rel="noopener">Google画像で開く</a></div><div class="google-images-frame-wrap"><div class="google-images-placeholder">説明を開いたときに画像検索を読み込みます</div><iframe class="google-images-frame" hidden loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></div></details>`;
+  const imageUrl=googleImageUrl(d.q,true);
+  return `<details class="exercise-guide"><summary>やり方・用語説明</summary><p>${esc(d.guide)}</p><div class="google-images-box" data-query="${esc(d.q)}"><div class="google-images-head"><div><strong>Google Images</strong><span>${esc(d.q)}</span></div><a href="${googleImageUrl(d.q)}" target="_blank" rel="noopener noreferrer">別タブで開く</a></div><div class="google-images-frame-wrap"><iframe class="google-images-frame" src="${esc(imageUrl)}" title="Google画像検索：${esc(d.q)}" loading="eager" referrerpolicy="no-referrer-when-downgrade"></iframe></div></div></details>`;
 }
 
 let activeWorkoutKey=null;
@@ -240,20 +241,7 @@ function openWorkout(key){
   document.querySelector('#workoutNotes').value='';
   document.querySelector('#completeWorkoutBtn').textContent=key==='R'?'回復日を記録':'セッション完了 +25 XP';
   document.querySelector('#workoutBackdrop').hidden=false;document.querySelector('#workoutPanel').hidden=false;document.body.style.overflow='hidden';
-  document.querySelectorAll('.exercise-guide').forEach(d=>{
-    const loadImages=()=>{
-      const box=d.querySelector('.google-images-box');if(!box||box.dataset.loaded)return;
-      const f=box.querySelector('iframe'),p=box.querySelector('.google-images-placeholder');
-      if(!f)return;
-      f.src=googleImageUrl(box.dataset.query,true);
-      f.hidden=false;
-      if(p)p.hidden=true;
-      box.dataset.loaded='1';
-    };
-    d.addEventListener('toggle',()=>{if(d.open)loadImages();});
-    const summary=d.querySelector('summary');
-    if(summary)summary.addEventListener('click',()=>setTimeout(()=>{if(d.open)loadImages();},0));
-  });
+
 }
 function closeWorkout(){document.querySelector('#workoutBackdrop').hidden=true;document.querySelector('#workoutPanel').hidden=true;document.body.style.overflow='';}
 function completeWorkout(){
