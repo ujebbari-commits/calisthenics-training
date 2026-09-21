@@ -7,17 +7,29 @@
   const EXERCISE_HISTORY_KEY='training.exerciseHistory.v1';
 
   const exercises=[
-    {id:'seated_leg_press',name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。',muscle:'legs',label:'脚',weight:true,reps:'12'},
-    {id:'leg_extension',name:'レッグエクステンション',desc:'太ももの前側。膝を伸ばすマシン。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
-    {id:'ab_crunch',name:'アブドミナルクランチ',desc:'座ってかがみながら肘側のパッドを押す腹筋マシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
-    {id:'rotary_torso',name:'ロータリートルソー',desc:'膝を台に乗せ、上半身を固定して左右へ動かす。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
-    {id:'lat_pulldown',name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引く。',muscle:'back',label:'背中',weight:true,reps:'12'},
+    {id:'seated_leg_press',name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
+    {id:'linear_leg_press',name:'リニアレッグプレス',desc:'プレートロード式のレッグプレス。市ヶ谷店フリーウェイトエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
+    {id:'leg_extension',name:'レッグ・エクステンション',desc:'膝を伸ばして太ももの前側を鍛える。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
+    {id:'seated_leg_curl',name:'シーテッド・レッグ・カール',desc:'座って膝を曲げ、太ももの裏側を鍛える。',muscle:'legs',label:'ハム',weight:true,reps:'12'},
+    {id:'hip_abductor',name:'ヒップアブダクター',desc:'脚を外側へ開いてお尻の横側を鍛える。',muscle:'legs',label:'臀部',weight:true,reps:'12'},
+    {id:'hip_adductor',name:'ヒップアダクター',desc:'脚を内側へ閉じて内ももを鍛える。',muscle:'legs',label:'内もも',weight:true,reps:'12'},
+    {id:'ab_crunch',name:'アブドミナル',desc:'座って上体を丸め、腹筋を鍛えるマシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
+    {id:'rotary_torso',name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
+    {id:'lat_pulldown',name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引いて背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'dead_hang',name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,reps:'20–40秒'},
-    {id:'pec_fly',name:'ペックフライ',desc:'腕を開いた位置から前へ閉じる。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'chest_press',name:'チェストプレス',desc:'座って前へ押す。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'shoulder_press',name:'ショルダープレス',desc:'座って頭上へ押す。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
-    {id:'chest_supported_row',name:'チェストサポート・ロー',desc:'体を斜めに固定し、左右のバーを後ろへ引く。',muscle:'back',label:'背中',weight:true,reps:'12'},
-    {id:'high_row_machine',name:'ハイロー / プルダウン系',desc:'座って頭上の左右バーを下へ引く。',muscle:'back',label:'背中',weight:true,reps:'12'}
+    {id:'pec_fly',name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
+    {id:'rear_delt',name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
+    {id:'chest_press',name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
+    {id:'shoulder_press',name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
+    {id:'seated_row',name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
+    {id:'chest_supported_row',name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
+    {id:'high_row_machine',name:'アイソラテラル・ハイロー',desc:'左右独立の頭上レバーを下方向へ引くハイロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
+    {id:'lateral_raise',name:'ラテラルレイズ',desc:'腕を横へ上げて肩の横側を鍛えるマシン。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
+    {id:'assisted_dip',name:'アシスト・ディップ',desc:'補助付きディップ。胸・三頭筋を鍛える。',muscle:'chest',label:'胸・三頭',weight:true,reps:'12'},
+    {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。',muscle:'back',label:'背中・二頭',weight:true,reps:'12'},
+    {id:'biceps_machine',name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
+    {id:'triceps_machine',name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
+    {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'}
   ];
 
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
@@ -46,7 +58,8 @@
       core:'<svg '+c+'><path d="M8 3.5 6 7l1 11h10l1-11-2-3.5-4 2-4-2Z"/><path class="muscle-mark" d="M9.2 8.2h2.1v2.5H9.2zm3.5 0h2.1v2.5h-2.1zm-3.5 3.4h2.1v2.5H9.2zm3.5 0h2.1v2.5h-2.1z"/></svg>',
       obliques:'<svg '+c+'><path d="M8 3.5 6 7l1 11h10l1-11-2-3.5-4 2-4-2Z"/><path class="muscle-mark" d="m8.4 8 2 2.3-1.8 5H7.2L7 10zm7.2 0-2 2.3 1.8 5h1.4L17 10z"/></svg>',
       legs:'<svg '+c+'><path d="M9 3h6l.7 7-1.2 11h-3l.5-8-.5 8h-3L7.8 10 9 3Z"/><path class="muscle-mark" d="M8.7 7.2h2.7l.1 5.8H9.1zm3.9 0h2.7l-.4 5.8h-2.4z"/></svg>',
-      grip:'<svg '+c+'><path d="M4 7h16v2H4z"/><path d="M7 9v5.5c0 2 1.4 3.5 3.2 3.5H12v-7H9.8v-2Zm10 0v5.5c0 2-1.4 3.5-3.2 3.5H12v-7h2.2v-2Z"/><path class="muscle-mark" d="M7 10h4v3H7zm6 0h4v3h-4z"/></svg>'
+      grip:'<svg '+c+'><path d="M4 7h16v2H4z"/><path d="M7 9v5.5c0 2 1.4 3.5 3.2 3.5H12v-7H9.8v-2Zm10 0v5.5c0 2-1.4 3.5-3.2 3.5H12v-7h2.2v-2Z"/><path class="muscle-mark" d="M7 10h4v3H7zm6 0h4v3h-4z"/></svg>',
+      arms:'<svg '+c+'><path d="M7 5c1.5 0 2.5 1 2.8 2.4L10.5 10H13l.7-2.6C14 6 15 5 16.5 5H18v4h-1.2l-.6 4.5c-.2 2-1.8 3.5-3.8 3.5h-.8c-2 0-3.6-1.5-3.8-3.5L7.2 9H6V5h1Z"/><path class="muscle-mark" d="M7.5 7.2h2.2l.8 3.3H8zm6.8 0h2.2l-.5 3.3h-2.5z"/></svg>'
     };
     return m[type]||m.core;
   }
