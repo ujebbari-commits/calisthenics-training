@@ -36,10 +36,64 @@
     {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'}
   ];
 
+  const catalogPrograms={
+    4:[
+      {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'上半身の基本種目をまとめる日。',items:[
+        ['chest_press','main'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
+      ]},
+      {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
+      ]},
+      {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
+        ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['assisted_dip','secondary'],['assisted_chin','secondary']
+      ]},
+      {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core']
+      ]}
+    ],
+    5:[
+      {key:'A',code:'PUSH',title:'Push · 胸 / 肩 / 三頭',desc:'押す筋肉を集中して鍛える日。',items:[
+        ['chest_press','main'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['assisted_dip','secondary'],['triceps_machine','accessory']
+      ]},
+      {key:'B',code:'PULL',title:'Pull · 背中 / 二頭 / 握力',desc:'引く筋肉と懸垂の土台を鍛える日。',items:[
+        ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
+      ]},
+      {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core']
+      ]},
+      {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
+        ['pec_fly','main'],['chest_supported_row','main'],['assisted_chin','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+      ]},
+      {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core']
+      ]}
+    ]
+  };
+
+  function exerciseById(id){return exercises.find(e=>e.id===id)}
+  function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
+
+  function applyCatalogTemplates(){
+    if(typeof templates==='undefined')return;
+    const defs=activeCatalogProgram();
+    for(const day of defs){
+      templates[day.key]={
+        code:day.code,
+        title:day.title,
+        desc:day.desc,
+        items:day.items.map(([id,role])=>{
+          const e=exerciseById(id);
+          return [e?e.name:id,role];
+        })
+      };
+    }
+    if(Number(state.programMode)===4 && templates.E) delete templates.E;
+  }
+
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
   const legacy=read('trainingQuest.exerciseTargets.v1',{});
   const targets=read(TARGET_KEY,{});
-  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null});
+  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null,exerciseSearch:''});
   let exerciseHistory=read(EXERCISE_HISTORY_KEY,[]);
   if(!Array.isArray(exerciseHistory)) exerciseHistory=[];
 
@@ -85,13 +139,19 @@
 
     [hero,stats].filter(Boolean).forEach(x=>x.dataset.appSection='today');
     [summary,plan,level].filter(Boolean).forEach(x=>x.dataset.appSection='program');
+    if(plan)plan.classList.add('legacy-program-hidden');
+    const catalogProgramCard=document.createElement('section');
+    catalogProgramCard.className='card catalog-program-card';
+    catalogProgramCard.dataset.appSection='program';
+    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEEKLY PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill">種目タブと共通</span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
+    shell.appendChild(catalogProgramCard);
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
     if(history)history.dataset.appSection='history';
 
     const ex=document.createElement('section');
     ex.className='card exercise-manager';
     ex.dataset.appSection='exercises';
-    ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><p class="muted">種目を押すと重量・レップ・セットを編集できます。値は自動保存されます。</p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
+    ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><label class="exercise-search"><span>検索</span><input id="exerciseSearchInput" type="search" placeholder="種目名・部位で検索" value="'+esc(ui.exerciseSearch||'')+'"></label><p id="exerciseSearchCount" class="muted exercise-search-count"></p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
     shell.appendChild(ex);
 
     const exerciseHistoryCard=document.createElement('section');
@@ -112,6 +172,12 @@
     // Hide redundant controls; functionality remains available through the remaining UI/automatic progression.
     ['recoveryBtn','levelUpBtn','resetLevelBtn','exportBtn'].forEach(id=>{const n=document.getElementById(id);if(n)n.classList.add('ui-redundant')});
 
+    const searchInput=document.querySelector('#exerciseSearchInput');
+    if(searchInput)searchInput.addEventListener('input',()=>{ui.exerciseSearch=searchInput.value;saveUi();renderExercises();});
+    applyCatalogTemplates();
+    renderCatalogProgram();
+    const modeSelect=document.querySelector('#programModeSelect');
+    if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{applyCatalogTemplates();if(typeof renderAll==='function')renderAll();renderCatalogProgram();},0));
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
@@ -123,13 +189,18 @@
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
     document.querySelectorAll('[data-simple-tab]').forEach(b=>b.classList.toggle('active',b.dataset.simpleTab===id));
+    if(id==='program')renderCatalogProgram();
     window.scrollTo(0,0);
   }
 
   function renderExercises(){
     const root=document.querySelector('#simpleExerciseList');
     if(!root)return;
-    root.innerHTML=exercises.map(e=>{
+    const q=String(ui.exerciseSearch||'').trim().toLocaleLowerCase('ja');
+    const filtered=!q?exercises:exercises.filter(e=>[e.name,e.label,e.desc,e.muscle].some(v=>String(v||'').toLocaleLowerCase('ja').includes(q)));
+    const count=document.querySelector('#exerciseSearchCount');
+    if(count)count.textContent=q?filtered.length+' / '+exercises.length+'種目':'全'+exercises.length+'種目';
+    root.innerHTML=filtered.map(e=>{
       const t=targets[e.id],open=ui.openExercise===e.id;
       const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
       return '<article class="simple-exercise '+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
@@ -145,6 +216,7 @@
         '</div>':'')+
       '</article>';
     }).join('');
+    if(!filtered.length)root.innerHTML='<div class="empty">該当する種目がありません。</div>';
 
     root.querySelectorAll('.simple-exercise-summary').forEach(btn=>btn.onclick=()=>{
       const id=btn.closest('.simple-exercise').dataset.exerciseId;
@@ -164,6 +236,28 @@
       if(vals[2])vals[2].textContent=t.sets+' set';
     });
   }
+  function renderCatalogProgram(){
+    const title=document.querySelector('#catalogProgramTitle');
+    const grid=document.querySelector('#catalogProgramGrid');
+    if(!title||!grid)return;
+    const defs=activeCatalogProgram();
+    title.textContent='週'+(Number(state.programMode)===4?'4':'5')+'メニュー';
+    grid.innerHTML=defs.map(day=>'<article class="catalog-day"><div class="catalog-day-head"><span class="plan-code">'+esc(day.code)+'</span><h3>'+esc(day.title)+'</h3><p>'+esc(day.desc)+'</p></div><div class="catalog-day-exercises">'+day.items.map(([id])=>{const e=exerciseById(id);if(!e)return '';const t=targets[id];return '<button type="button" class="catalog-program-exercise" data-catalog-exercise="'+id+'">'+badge(e)+'<span><strong>'+esc(e.name)+'</strong><small>'+(e.weight?(t.weight===''?'重量未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重'))+' · '+esc(t.reps)+' · '+t.sets+' set</small></span></button>';}).join('')+'</div></article>').join('');
+    grid.querySelectorAll('[data-catalog-exercise]').forEach(btn=>btn.onclick=()=>openExerciseFromProgram(btn.dataset.catalogExercise));
+  }
+
+  function openExerciseFromProgram(id){
+    ui.tab='exercises';
+    ui.openExercise=id;
+    ui.exerciseSearch='';
+    saveUi();
+    const input=document.querySelector('#exerciseSearchInput');
+    if(input)input.value='';
+    showTab('exercises');
+    renderExercises();
+    requestAnimationFrame(()=>document.querySelector('[data-exercise-id="'+id+'"]')?.scrollIntoView({behavior:'smooth',block:'center'}));
+  }
+
   function saveExerciseRecord(box){
     const id=box?.dataset.exerciseId;
     const def=exercises.find(x=>x.id===id);
@@ -338,7 +432,7 @@
     .simple-tabs{position:sticky;top:0;z-index:80;max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:8px;overflow-x:auto;background:var(--bg)}
     .simple-tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 14px;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
     .simple-tabs button.active{background:var(--accent);color:#07110c;border-color:var(--accent)}
-    .simple-head{margin-bottom:6px}.simple-exercise-list{display:grid;gap:8px;margin-top:14px}
+    .legacy-program-hidden{display:none!important}.simple-head{margin-bottom:6px}.exercise-search{display:grid;gap:6px;margin-top:10px;color:var(--muted);font-size:.76rem}.exercise-search input{width:100%;font-size:1rem}.exercise-search-count{margin:8px 0 0;font-size:.76rem}.simple-exercise-list{display:grid;gap:8px;margin-top:10px}
     .simple-exercise{border:1px solid var(--line);background:var(--surface2);border-radius:14px;overflow:hidden}.simple-exercise.open{border-color:var(--accent)}
     .simple-exercise-summary{width:100%;border:0;background:transparent;color:var(--text);padding:13px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;text-align:left;cursor:pointer}
     .exercise-title-line{display:flex;gap:10px;align-items:center;min-width:0}.exercise-title-line strong{display:block}.exercise-title-line small{display:block;color:var(--muted);margin-top:2px}
@@ -346,11 +440,13 @@
     .muscle-badge svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.muscle-badge .muscle-mark{fill:currentColor;stroke:none}
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values span{border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}
     .simple-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 13px 13px}.simple-editor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:2px}.save-record-status{margin-right:auto;color:var(--accent);font-size:.78rem}.save-record-status.error{color:var(--danger)}.simple-field,.simple-static{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.simple-field>div{display:flex;align-items:center;gap:6px}.simple-field input{width:100%;font-weight:800}.simple-field em{font-style:normal}.simple-static strong{color:var(--text);font-size:1rem}
-    .legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
-    @media(max-width:700px){.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}}
+    .catalog-program-grid{display:grid;gap:12px}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.catalog-program-exercise{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:9px;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}.catalog-program-exercise>span:last-child{min-width:0}.catalog-program-exercise strong,.catalog-program-exercise small{display:block}.catalog-program-exercise small{color:var(--muted);font-size:.7rem;margin-top:2px}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
+    @media(max-width:700px){.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}}
   `;
   document.head.appendChild(style);
 
+  applyCatalogTemplates();
+  if(typeof renderAll==='function')renderAll();
   setupSections();
   wrapWorkout();
 })();
