@@ -1,5 +1,5 @@
-const CACHE='training-v35';
-const ASSETS=['./','./index.html','./styles.css?v=20260916-1','./app.js?v=20260922-3','./level-config-v2.js?v=20260916-2','./program-mode-v2.js?v=20260916-3','./ui-v2.js?v=20260922-17','./manifest-v3.webmanifest','./training-biceps-192.png?v=2','./training-biceps-512.png?v=2'];
+const CACHE='training-v36';
+const ASSETS=['./','./index.html','./styles.css?v=20260916-1','./app.js?v=20260922-4','./level-config-v2.js?v=20260916-2','./program-mode-v2.js?v=20260916-3','./ui-v2.js?v=20260922-18','./manifest-v3.webmanifest','./training-biceps-192.png?v=2','./training-biceps-512.png?v=2'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]));});
 self.addEventListener('fetch',e=>{const req=e.request;if(req.mode==='navigate'){e.respondWith(fetch(req).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return r;}).catch(()=>caches.match('./index.html')));return;}e.respondWith(fetch(req).then(r=>{if(r&&r.ok&&req.method==='GET'){const copy=r.clone();caches.open(CACHE).then(c=>c.put(req,copy));}return r;}).catch(()=>caches.match(req)));});
