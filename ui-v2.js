@@ -12,6 +12,7 @@
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
     {id:'linear_leg_press',goalKg:160,name:'リニアレッグプレス',desc:'プレートロード式のレッグプレス。市ヶ谷店フリーウェイトエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
+    {id:'leg_press_calf_raise',goalKg:120,name:'レッグプレス・カーフレイズ',desc:'レッグプレスで膝をほぼ固定し、足首だけを動かしてふくらはぎを鍛える。足の前半分をプレートに置き、かかとを下げてからつま先で押す。',muscle:'legs',label:'ふくらはぎ',weight:true,reps:'12'},
     {id:'leg_extension',goalKg:60,name:'レッグ・エクステンション',desc:'膝を伸ばして太ももの前側を鍛える。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
     {id:'seated_leg_curl',goalKg:50,name:'シーテッド・レッグ・カール',desc:'座って膝を曲げ、太ももの裏側を鍛える。',muscle:'legs',label:'ハム',weight:true,reps:'12'},
     {id:'hip_abductor',goalKg:70,name:'ヒップアブダクター',desc:'脚を外側へ開いてお尻の横側を鍛える。',muscle:'legs',label:'臀部',weight:true,reps:'12'},
@@ -45,13 +46,13 @@
         ['chest_press','main'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
       ]},
       {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
         ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['chest_press','secondary'],['lat_pulldown','secondary']
       ]},
       {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core']
       ]}
     ],
     5:[
@@ -62,13 +63,13 @@
         ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
       ]},
       {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core']
       ]},
       {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
         ['pec_fly','main'],['chest_supported_row','main'],['lat_pulldown','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core']
       ]}
     ]
   };
