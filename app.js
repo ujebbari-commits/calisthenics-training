@@ -50,6 +50,7 @@ const exerciseDB={
   'ブルガリアンスクワット':{muscle:'脚・臀部',guide:'後ろ足をベンチに乗せ、前脚中心でしゃがむ。最初は自重でも十分。左右同じ回数。',q:'Bulgarian split squat proper form'},
   'ルーマニアンデッドリフト':{muscle:'ハムストリング・臀部',guide:'膝を少し曲げ、背中をまっすぐ保って股関節を後ろへ引く。腰で持ち上げる種目ではない。Lv6以降でフォームに不安があればスタッフに確認。',q:'Romanian deadlift dumbbell proper form'},
   'カーフレイズ':{muscle:'ふくらはぎ',guide:'かかとを下げてからつま先立ち。反動で跳ねず、上でも下でもコントロールする。',q:'calf raise machine exercise proper form'},
+  'レッグプレス・カーフレイズ':{muscle:'ふくらはぎ',guide:'レッグプレスのプレートに足の前半分を置き、膝をほぼ固定したまま足首だけを動かす。かかとをゆっくり下げてふくらはぎを伸ばし、つま先で押して最大まで上げる。足が滑らない位置を使い、膝をロックし切らない。',q:'leg press calf raise proper form'},
   'アブドミナルクランチ':{muscle:'腹筋',guide:'肋骨を骨盤へ近づけるように身体を丸める腹筋マシン。腕や腰で押し込まず、お腹を縮める。',q:'abdominal crunch machine proper form'},
   'リバースクランチ':{muscle:'腹筋',guide:'仰向けで膝を胸へ近づけ、最後に骨盤を少し床から持ち上げる。脚を振らず腹筋で丸める。',q:'reverse crunch proper form'},
   'デッドバグ':{muscle:'体幹',guide:'腰を床へ軽く押し付けたまま脚を交互に伸ばす。腰が浮くなら脚を遠くまで伸ばさない。',q:'dead bug exercise proper form'},
