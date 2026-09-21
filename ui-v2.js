@@ -29,6 +29,10 @@
     {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。',muscle:'back',label:'背中・二頭',weight:true,reps:'12'},
     {id:'biceps_machine',name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
     {id:'triceps_machine',name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
+    {id:'treadmill',name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'cross_trainer',name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'recumbent_bike',name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'upright_bike',name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'}
   ];
 
@@ -41,7 +45,7 @@
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
-    const migratedReps=(old.reps==='8–12'||old.reps==='8-12')?e.reps:(old.reps||e.reps); targets[e.id]={weight:old.weight??'',reps:migratedReps,sets:Math.max(1,Number(old.sets||3))};
+    const migratedReps=(old.reps==='8–12'||old.reps==='8-12')?e.reps:(old.reps||e.reps); targets[e.id]={weight:old.weight??'',reps:migratedReps,sets:Math.max(1,Number(old.sets||e.defaultSets||3))};
   }
   const saveTargets=()=>localStorage.setItem(TARGET_KEY,JSON.stringify(targets));
   const saveUi=()=>localStorage.setItem(UI_KEY,JSON.stringify(ui));
@@ -59,7 +63,8 @@
       obliques:'<svg '+c+'><path d="M8 3.5 6 7l1 11h10l1-11-2-3.5-4 2-4-2Z"/><path class="muscle-mark" d="m8.4 8 2 2.3-1.8 5H7.2L7 10zm7.2 0-2 2.3 1.8 5h1.4L17 10z"/></svg>',
       legs:'<svg '+c+'><path d="M9 3h6l.7 7-1.2 11h-3l.5-8-.5 8h-3L7.8 10 9 3Z"/><path class="muscle-mark" d="M8.7 7.2h2.7l.1 5.8H9.1zm3.9 0h2.7l-.4 5.8h-2.4z"/></svg>',
       grip:'<svg '+c+'><path d="M4 7h16v2H4z"/><path d="M7 9v5.5c0 2 1.4 3.5 3.2 3.5H12v-7H9.8v-2Zm10 0v5.5c0 2-1.4 3.5-3.2 3.5H12v-7h2.2v-2Z"/><path class="muscle-mark" d="M7 10h4v3H7zm6 0h4v3h-4z"/></svg>',
-      arms:'<svg '+c+'><path d="M7 5c1.5 0 2.5 1 2.8 2.4L10.5 10H13l.7-2.6C14 6 15 5 16.5 5H18v4h-1.2l-.6 4.5c-.2 2-1.8 3.5-3.8 3.5h-.8c-2 0-3.6-1.5-3.8-3.5L7.2 9H6V5h1Z"/><path class="muscle-mark" d="M7.5 7.2h2.2l.8 3.3H8zm6.8 0h2.2l-.5 3.3h-2.5z"/></svg>'
+      arms:'<svg '+c+'><path d="M7 5c1.5 0 2.5 1 2.8 2.4L10.5 10H13l.7-2.6C14 6 15 5 16.5 5H18v4h-1.2l-.6 4.5c-.2 2-1.8 3.5-3.8 3.5h-.8c-2 0-3.6-1.5-3.8-3.5L7.2 9H6V5h1Z"/><path class="muscle-mark" d="M7.5 7.2h2.2l.8 3.3H8zm6.8 0h2.2l-.5 3.3h-2.5z"/></svg>',
+      cardio:'<svg '+c+'><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z"/><path class="muscle-mark" d="m7.5 11 2.2 0 1-2.3 2.1 5 1.1-2.7h2.6v1.8h-1.4l-2.2 4.2-2.2-5.1-.4.9H7.5z"/></svg>'
     };
     return m[type]||m.core;
   }
@@ -126,15 +131,15 @@
     if(!root)return;
     root.innerHTML=exercises.map(e=>{
       const t=targets[e.id],open=ui.openExercise===e.id;
-      const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):'自重';
+      const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
       return '<article class="simple-exercise '+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
         '<button type="button" class="simple-exercise-summary">'+
           '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+esc(e.name)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
           '<div class="exercise-values"><span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
         '</button>'+
         (open?'<div class="simple-editor">'+
-          (e.weight?field('重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>自重</strong></div>')+
-          field(e.id==='dead_hang'?'時間':'レップ','reps',t.reps,'text','')+
+          (e.weight?field('重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>'+(e.loadLabel||'自重')+'</strong></div>')+
+          field(e.metricLabel||(e.id==='dead_hang'?'時間':'レップ'),'reps',t.reps,'text',e.unit||'')+
           field('セット','sets',t.sets,'number','')+
           '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span><button type="button" class="primary save-exercise-record">保存</button></div>'+
         '</div>':'')+
@@ -154,7 +159,7 @@
       const t=targets[id];
       const vals=box.querySelectorAll('.exercise-values span');
       const def=exercises.find(x=>x.id===id);
-      if(vals[0])vals[0].textContent=def.weight?(t.weight===''?'未設定':t.weight+' kg'):'自重';
+      if(vals[0])vals[0].textContent=def.weight?(t.weight===''?'未設定':t.weight+' kg'):(def.loadLabel||'自重');
       if(vals[1])vals[1].textContent=t.reps;
       if(vals[2])vals[2].textContent=t.sets+' set';
     });
@@ -172,7 +177,7 @@
     }
     const metric=parseMetric(t.reps);
     if(!Number.isFinite(metric)||metric<=0){
-      setSaveStatus(box,def.id==='dead_hang'?'秒数を入力してください':'レップ数を入力してください',true);
+      setSaveStatus(box,def.metricLabel==='時間'?'時間を入力してください':(def.id==='dead_hang'?'秒数を入力してください':'レップ数を入力してください'),true);
       return;
     }
 
@@ -185,7 +190,7 @@
       weight:def.weight?weight:null,
       reps:String(t.reps),
       metric,
-      sets:Number(t.sets||3)
+      sets:Number(t.sets||def.defaultSets||3)
     });
     saveExerciseHistory();
     ui.progressExercise=def.id;saveUi();
@@ -254,11 +259,11 @@
     const latestValue=def.weight?Number(latest.weight):Number(latest.metric);
     const best=def.weight?Math.max(...values):Math.max(...values);
     const first=values[0];
-    const unit=def.weight?'kg':'秒';
+    const unit=def.weight?'kg':(def.unit||'秒');
     summary.innerHTML='<article><span>最新</span><strong>'+latestValue+unit+'</strong></article><article><span>最高</span><strong>'+best+unit+'</strong></article><article><span>初回比</span><strong>'+((latestValue-first)>0?'+':'')+(latestValue-first)+unit+'</strong></article>';
 
     chart.innerHTML=buildCurveSvg(data,def);
-    rows.innerHTML='<div class="progress-log-head"><span>日付</span><span>重量</span><span>レップ/時間</span><span>セット</span></div>'+[...data].reverse().map(r=>'<div class="progress-log-row"><span>'+formatDate(r.iso)+'</span><span>'+(def.weight?r.weight+' kg':'自重')+'</span><span>'+esc(r.reps)+'</span><span>'+r.sets+'</span></div>').join('');
+    rows.innerHTML='<div class="progress-log-head"><span>日付</span><span>負荷</span><span>レップ/時間</span><span>セット</span></div>'+[...data].reverse().map(r=>'<div class="progress-log-row"><span>'+formatDate(r.iso)+'</span><span>'+(def.weight?r.weight+' kg':'自重')+'</span><span>'+esc(r.reps)+'</span><span>'+r.sets+'</span></div>').join('');
   }
 
   function buildCurveSvg(data,def){
@@ -284,8 +289,8 @@
     const grid=[];for(let i=0;i<=4;i++){const y=pT+pH*i/4;const v=max-(max-min)*i/4;grid.push('<line x1="'+pL+'" y1="'+y+'" x2="'+(W-pR)+'" y2="'+y+'" class="exercise-chart-grid"/><text x="'+(pL-8)+'" y="'+(y+4)+'" text-anchor="end" class="exercise-chart-text">'+formatNumber(v)+'</text>');}
     const every=Math.max(1,Math.ceil(pts.length/6));
     const labels=pts.map((p,i)=>(i%every===0||i===pts.length-1)?'<text x="'+p.x+'" y="'+(H-16)+'" text-anchor="middle" class="exercise-chart-text">'+new Date(p.r.iso).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})+'</text>':'').join('');
-    const circles=pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="5" class="exercise-chart-dot"><title>'+formatDateTime(p.r.iso)+' · '+p.v+(def.weight?'kg':'秒')+' · '+esc(p.r.reps)+' · '+p.r.sets+'set</title></circle>').join('');
-    return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(def.name)+'の進捗グラフ">'+grid.join('')+'<path d="'+d+'" class="exercise-chart-line"/>'+circles+labels+'<text x="12" y="18" class="exercise-chart-unit">'+(def.weight?'kg':'秒')+'</text></svg>';
+    const circles=pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="5" class="exercise-chart-dot"><title>'+formatDateTime(p.r.iso)+' · '+p.v+(def.weight?'kg':(def.unit||'秒'))+' · '+esc(p.r.reps)+' · '+p.r.sets+'set</title></circle>').join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(def.name)+'の進捗グラフ">'+grid.join('')+'<path d="'+d+'" class="exercise-chart-line"/>'+circles+labels+'<text x="12" y="18" class="exercise-chart-unit">'+(def.weight?'kg':(def.unit||'秒'))+'</text></svg>';
   }
   function formatNumber(v){
     return Math.abs(v-Math.round(v))<0.01?String(Math.round(v)):v.toFixed(1);
@@ -297,7 +302,7 @@
     if(!exerciseHistory.length){root.innerHTML='<div class="empty">まだ種目記録はありません。</div>';return;}
     root.innerHTML=[...exerciseHistory].reverse().slice(0,60).map(r=>{
       const def=exercises.find(e=>e.id===r.exerciseId)||{name:r.exerciseName||r.exerciseId,weight:r.weight!=null};
-      return '<div class="exercise-history-row"><span>'+formatDateTime(r.iso)+'</span><strong>'+esc(def.name)+'</strong><span>'+(r.weight!=null?r.weight+' kg':'自重')+' · '+esc(r.reps)+' · '+r.sets+' set</span></div>';
+      return '<div class="exercise-history-row"><span>'+formatDateTime(r.iso)+'</span><strong>'+esc(def.name)+'</strong><span>'+(r.weight!=null?r.weight+' kg':(def.loadLabel||'自重'))+' · '+esc(r.reps)+(def.unit&&!String(r.reps).includes(def.unit)?' '+def.unit:'')+' · '+r.sets+' set</span></div>';
     }).join('');
   }
 
