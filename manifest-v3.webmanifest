@@ -1,7 +1,7 @@
 {
   "id":"./",
-  "name":"Training Quest",
-  "short_name":"Training Quest",
+  "name":"Training",
+  "short_name":"Training",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",
