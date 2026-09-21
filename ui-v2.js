@@ -144,7 +144,7 @@
     catalogProgramCard.className='card catalog-program-card';
     catalogProgramCard.dataset.appSection='program';
     catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEEKLY PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill">種目タブと共通</span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
-    shell.appendChild(catalogProgramCard);
+    if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
     if(history)history.dataset.appSection='history';
 
