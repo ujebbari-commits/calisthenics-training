@@ -15,8 +15,8 @@
     {id:'pec_fly', name:'ペックフライ', desc:'腕を開いた位置から前へ閉じる胸のマシン。', muscle:'chest', muscleLabel:'胸', weight:true, metric:'reps', defaultReps:'8–12'},
     {id:'chest_press', name:'チェストプレス', desc:'座って前へ押す胸のマシン。', muscle:'chest', muscleLabel:'胸', weight:true, metric:'reps', defaultReps:'8–12'},
     {id:'shoulder_press', name:'ショルダープレス', desc:'座って頭上へ押す肩のマシン。', muscle:'shoulders', muscleLabel:'肩', weight:true, metric:'reps', defaultReps:'8–12'},
-    {id:'chest_supported_row', name:'チェストサポート・ロー（仮）', desc:'体が斜め・顔は下向きで、左右のバーを後ろへ引くマシン。正式名称が分かるまで仮名。', muscle:'back', muscleLabel:'背中', weight:true, metric:'reps', defaultReps:'8–12'},
-    {id:'high_row_machine', name:'ハイロー / プルダウン系（仮）', desc:'座って頭上の左右バーを下へ引く。ウェイトスタックは身体の後ろ側。正式名称が分かるまで仮名。', muscle:'back', muscleLabel:'背中', weight:true, metric:'reps', defaultReps:'8–12'}
+    {id:'chest_supported_row', name:'チェストサポート・ロー', desc:'体が斜め・顔は下向きで、左右のバーを後ろへ引くマシン。', muscle:'back', muscleLabel:'背中', weight:true, metric:'reps', defaultReps:'8–12'},
+    {id:'high_row_machine', name:'ハイロー / プルダウン系', desc:'座って頭上の左右バーを下へ引く。ウェイトスタックは身体の後ろ側。', muscle:'back', muscleLabel:'背中', weight:true, metric:'reps', defaultReps:'8–12'}
   ];
 
   function readJSON(key, fallback){
@@ -105,7 +105,7 @@
     const valid = ['today','exercises','program','progress','level','history'];
     if (!valid.includes(id)) id='today';
     uiState.activeTab=id; saveUi();
-    document.querySelectorAll('[data-tab-panel]').forEach(p=>p.hidden=p.dataset.tabPanel!==id);
+    document.querySelectorAll('[data-tab-panel]').forEach(p=>{const hide=p.dataset.tabPanel!==id;p.hidden=hide;p.style.display=hide?'none':'';});
     document.querySelectorAll('.app-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
     window.scrollTo({top:0,behavior:'instant'});
   }
@@ -248,7 +248,7 @@
     .app-tabs{position:sticky;top:0;z-index:50;max-width:1180px;margin:0 auto 6px;padding:8px 20px;display:flex;gap:8px;overflow-x:auto;background:linear-gradient(var(--bg) 75%,transparent)}
     .app-tab-btn{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 14px;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
     .app-tab-btn.active{background:var(--accent);color:#07110c;border-color:var(--accent)}
-    .tab-panel{display:grid;gap:18px}
+    .tab-panel{display:grid;gap:18px}.tab-panel[hidden]{display:none!important}
     .focused-exercise{border:1px solid var(--accent);background:var(--surface2);border-radius:18px;padding:18px}
     .focus-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.focus-top h3{font-size:1.35rem;margin:3px 0}.focus-nav{display:flex;gap:8px}
     .target-input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
