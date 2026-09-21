@@ -109,7 +109,7 @@
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
   const legacy=read('trainingQuest.exerciseTargets.v1',{});
   const targets=read(TARGET_KEY,{});
-  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null,exerciseSearch:'',exercisePart:'all'});
+  const ui=read(UI_KEY,{tab:'today',openExercise:null,progressExercise:null,exerciseSearch:'',exercisePart:'all',todayMenuKey:null});
   let exerciseHistory=read(EXERCISE_HISTORY_KEY,[]);
   if(!Array.isArray(exerciseHistory)) exerciseHistory=[];
 
@@ -121,6 +121,14 @@
   const saveUi=()=>localStorage.setItem(UI_KEY,JSON.stringify(ui));
   const saveExerciseHistory=()=>localStorage.setItem(EXERCISE_HISTORY_KEY,JSON.stringify(exerciseHistory));
   saveTargets();
+
+  const automaticRecommendedKey=typeof recommendedKey==='function'?recommendedKey:null;
+  recommendedKey=function(){
+    const keys=activeCatalogProgram().map(x=>x.key);
+    if(ui.todayMenuKey&&keys.includes(ui.todayMenuKey))return ui.todayMenuKey;
+    const auto=automaticRecommendedKey?automaticRecommendedKey():keys[0];
+    return keys.includes(auto)?auto:keys[0];
+  };
 
   function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function icon(type){
@@ -185,6 +193,22 @@
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
 
+    const heroActions=document.querySelector('.hero-actions');
+    if(heroActions&&!document.querySelector('#todayMenuSelect')){
+      const chooser=document.createElement('label');
+      chooser.className='today-menu-chooser';
+      chooser.innerHTML='<span>今日やるメニュー</span><select id="todayMenuSelect"></select>';
+      heroActions.insertBefore(chooser,heroActions.firstChild);
+      chooser.querySelector('select').addEventListener('change',e=>{
+        ui.todayMenuKey=e.target.value;
+        saveUi();
+        if(typeof renderHero==='function')renderHero();
+        if(typeof renderPlan==='function')renderPlan();
+        renderCatalogProgram();
+        renderTodayMenuSelector();
+      });
+    }
+
     // Hide redundant controls; functionality remains available through the remaining UI/automatic progression.
     ['recoveryBtn','levelUpBtn','resetLevelBtn','exportBtn'].forEach(id=>{const n=document.getElementById(id);if(n)n.classList.add('ui-redundant')});
 
@@ -200,9 +224,18 @@
       renderExercises();
     });
     applyCatalogTemplates();
+    renderTodayMenuSelector();
     renderCatalogProgram();
     const modeSelect=document.querySelector('#programModeSelect');
-    if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{applyCatalogTemplates();if(typeof renderAll==='function')renderAll();renderCatalogProgram();},0));
+    if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{
+      applyCatalogTemplates();
+      const keys=activeCatalogProgram().map(x=>x.key);
+      if(ui.todayMenuKey&&!keys.includes(ui.todayMenuKey))ui.todayMenuKey=null;
+      saveUi();
+      if(typeof renderAll==='function')renderAll();
+      renderTodayMenuSelector();
+      renderCatalogProgram();
+    },0));
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
@@ -214,6 +247,7 @@
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
     document.querySelectorAll('[data-simple-tab]').forEach(b=>b.classList.toggle('active',b.dataset.simpleTab===id));
+    if(id==='today')renderTodayMenuSelector();
     if(id==='program')renderCatalogProgram();
     window.scrollTo(0,0);
   }
@@ -266,13 +300,23 @@
       if(vals[2])vals[2].textContent=t.sets+' set';
     });
   }
+  function renderTodayMenuSelector(){
+    const select=document.querySelector('#todayMenuSelect');
+    if(!select)return;
+    const defs=activeCatalogProgram();
+    const key=recommendedKey();
+    select.innerHTML=defs.map(day=>'<option value="'+day.key+'">'+esc(day.title)+'</option>').join('');
+    select.value=key;
+  }
+
   function renderCatalogProgram(){
     const title=document.querySelector('#catalogProgramTitle');
     const grid=document.querySelector('#catalogProgramGrid');
     if(!title||!grid)return;
     const defs=activeCatalogProgram();
     title.textContent='週'+(Number(state.programMode)===4?'4':'5')+'メニュー';
-    grid.innerHTML=defs.map(day=>'<article class="catalog-day"><div class="catalog-day-head"><span class="plan-code">'+esc(day.code)+'</span><h3>'+esc(day.title)+'</h3><p>'+esc(day.desc)+'</p></div><div class="catalog-day-exercises">'+day.items.map(([id])=>{const e=exerciseById(id);if(!e)return '';const t=targets[id];return '<button type="button" class="catalog-program-exercise" data-catalog-exercise="'+id+'">'+badge(e)+'<span><strong>'+esc(e.name)+'</strong><small>'+(e.weight?(t.weight===''?'重量未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重'))+' · '+esc(t.reps)+' · '+t.sets+' set</small></span></button>';}).join('')+'</div></article>').join('');
+    const selectedKey=recommendedKey();
+    grid.innerHTML=defs.map(day=>'<article class="catalog-day '+(day.key===selectedKey?'selected-today':'')+'"><div class="catalog-day-head"><span class="plan-code">'+esc(day.code)+'</span><h3>'+esc(day.title)+'</h3><p>'+esc(day.desc)+'</p></div><div class="catalog-day-exercises">'+day.items.map(([id])=>{const e=exerciseById(id);if(!e)return '';const t=targets[id];return '<button type="button" class="catalog-program-exercise" data-catalog-exercise="'+id+'">'+badge(e)+'<span><strong>'+esc(e.name)+'</strong><small>'+(e.weight?(t.weight===''?'重量未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重'))+' · '+esc(t.reps)+' · '+t.sets+' set</small></span></button>';}).join('')+'</div></article>').join('');
     grid.querySelectorAll('[data-catalog-exercise]').forEach(btn=>btn.onclick=()=>openExerciseFromProgram(btn.dataset.catalogExercise));
   }
 
@@ -479,5 +523,6 @@
   applyCatalogTemplates();
   if(typeof renderAll==='function')renderAll();
   setupSections();
+  renderTodayMenuSelector();
   wrapWorkout();
 })();
