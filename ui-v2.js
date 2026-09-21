@@ -25,8 +25,8 @@
     {id:'chest_supported_row',name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'high_row_machine',name:'アイソラテラル・ハイロー',desc:'左右独立の頭上レバーを下方向へ引くハイロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'lateral_raise',name:'ラテラルレイズ',desc:'腕を横へ上げて肩の横側を鍛えるマシン。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
-    {id:'assisted_dip',name:'アシスト・ディップ',desc:'補助付きディップ。胸・三頭筋を鍛える。',muscle:'chest',label:'胸・三頭',weight:true,reps:'12'},
-    {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。',muscle:'back',label:'背中・二頭',weight:true,reps:'12'},
+    {id:'assisted_dip',name:'アシスト・ディップ',desc:'補助付きディップ。胸・三頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'chest',label:'胸・三頭',weight:true,weightLabel:'補助重量',reps:'12'},
+    {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'back',label:'背中・二頭',weight:true,weightLabel:'補助重量',reps:'12'},
     {id:'biceps_machine',name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
     {id:'triceps_machine',name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
     {id:'treadmill',name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
@@ -138,7 +138,7 @@
           '<div class="exercise-values"><span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
         '</button>'+
         (open?'<div class="simple-editor">'+
-          (e.weight?field('重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>'+(e.loadLabel||'自重')+'</strong></div>')+
+          (e.weight?field(e.weightLabel||'重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>'+(e.loadLabel||'自重')+'</strong></div>')+
           field(e.metricLabel||(e.id==='dead_hang'?'時間':'レップ'),'reps',t.reps,'text',e.unit||'')+
           field('セット','sets',t.sets,'number','')+
           '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span><button type="button" class="primary save-exercise-record">保存</button></div>'+
