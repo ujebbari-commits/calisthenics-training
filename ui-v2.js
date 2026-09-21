@@ -137,6 +137,12 @@
   };
 
   function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  function googleImageUrl(name){
+    return 'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(String(name||'')+' exercise machine');
+  }
+  function googleImageName(def){
+    return '<span class="google-image-name" role="link" tabindex="0" data-google-image="'+esc(def.name)+'" title="Google画像検索で見る">'+esc(def.name)+'</span>';
+  }
   function icon(type){
     const c='viewBox="0 0 24 24" aria-hidden="true"';
     const m={
@@ -291,7 +297,7 @@
       const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
       return '<article class="simple-exercise '+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
         '<button type="button" class="simple-exercise-summary">'+
-          '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+esc(e.name)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
+          '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
           '<div class="exercise-values"><span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
         '</button>'+
         (open?'<div class="simple-editor">'+
@@ -304,6 +310,15 @@
     }).join('');
     if(!filtered.length)root.innerHTML='<div class="empty">該当する種目がありません。</div>';
 
+    root.querySelectorAll('[data-google-image]').forEach(link=>{
+      const open=e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(googleImageUrl(link.dataset.googleImage),'_blank','noopener,noreferrer');
+      };
+      link.onclick=open;
+      link.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){open(e);}};
+    });
     root.querySelectorAll('.simple-exercise-summary').forEach(btn=>btn.onclick=()=>{
       const id=btn.closest('.simple-exercise').dataset.exerciseId;
       ui.openExercise=ui.openExercise===id?null:id;saveUi();renderExercises();
@@ -383,7 +398,7 @@
       const milestones=levelMilestones(goal);
       const currentText=current==null?'—':formatNumber(current)+' kg';
       return '<article class="weight-goal-item '+(status.done?'done':'')+'" data-goal-exercise="'+def.id+'">'+
-        '<div class="weight-goal-head">'+badge(def)+'<div><strong>'+esc(def.name)+'</strong><small>現在達成 '+currentText+'</small></div><span class="weight-level-badge">Lv'+level+'</span></div>'+
+        '<div class="weight-goal-head">'+badge(def)+'<div><strong><a class="google-image-anchor" href="'+esc(googleImageUrl(def.name))+'" target="_blank" rel="noopener noreferrer" title="Google画像検索で見る">'+esc(def.name)+'</a></strong><small>現在達成 '+currentText+'</small></div><span class="weight-level-badge">Lv'+level+'</span></div>'+
         '<div class="weight-level-next"><span>'+(level>=10?'Lv10達成':'次 Lv'+(level+1))+'</span><strong>'+formatNumber(nextWeight)+' kg</strong></div>'+
         '<label class="weight-goal-input"><span>Lv10目標</span><div><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(Number.isFinite(goal)?esc(goal):'')+'" placeholder="kg"><em>kg</em></div></label>'+
         '<div class="weight-goal-progress"><span style="width:'+Math.max(0,Math.min(100,level/10*100))+'%"></span></div>'+
@@ -665,7 +680,7 @@
     .legacy-program-hidden,.legacy-level-map-hidden{display:none!important}.simple-head{margin-bottom:6px}.exercise-search{display:grid;gap:6px;margin-top:10px;color:var(--muted);font-size:.76rem}.exercise-search input{width:100%;font-size:1rem}.exercise-part-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.exercise-part-filters button{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:999px;padding:7px 11px;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}.exercise-part-filters button.active{background:var(--accent);border-color:var(--accent);color:#07110c}.exercise-search-count{margin:8px 0 0;font-size:.76rem}.simple-exercise-list{display:grid;gap:8px;margin-top:10px}
     .simple-exercise{border:1px solid var(--line);background:var(--surface2);border-radius:14px;overflow:hidden}.simple-exercise.open{border-color:var(--accent)}
     .simple-exercise-summary{width:100%;border:0;background:transparent;color:var(--text);padding:13px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;text-align:left;cursor:pointer}
-    .exercise-title-line{display:flex;gap:10px;align-items:center;min-width:0}.exercise-title-line strong{display:block}.exercise-title-line small{display:block;color:var(--muted);margin-top:2px}
+    .exercise-title-line{display:flex;gap:10px;align-items:center;min-width:0}.exercise-title-line strong{display:block}.google-image-name,.google-image-anchor{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer}.google-image-name:hover,.google-image-anchor:hover{color:var(--accent)}.google-image-name:focus-visible,.google-image-anchor:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}.exercise-title-line small{display:block;color:var(--muted);margin-top:2px}
     .muscle-badge{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;border:1px solid var(--line);background:var(--surface3);border-radius:999px;padding:4px 7px;color:var(--accent);font-size:.68rem;font-weight:900}
     .muscle-badge svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.muscle-badge .muscle-mark{fill:currentColor;stroke:none}
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values span{border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}
