@@ -21,7 +21,7 @@
     {id:'ab_roller',name:'アブローラー',desc:'膝コロを基本に、腹筋で体幹を固定しながらローラーを前へ転がして戻す。腰が反らない範囲で行う。',muscle:'core',label:'腹',weight:false,reps:'8–12',defaultSets:3},
     {id:'rotary_torso',goalKg:45,name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
     {id:'lat_pulldown',goalKg:60,name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引いて背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
-    {id:'dead_hang',name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,reps:'20–40秒'},
+    {id:'dead_hang',goalMetric:60,name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,metricLabel:'時間',unit:'秒',reps:'20–40秒'},
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
@@ -35,10 +35,10 @@
     {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'back',label:'背中・二頭',weight:true,weightLabel:'補助重量',goalDirection:'down',reps:'12'},
     {id:'biceps_machine',goalKg:30,name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
     {id:'triceps_machine',goalKg:40,name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
-    {id:'treadmill',name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
-    {id:'cross_trainer',name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
-    {id:'recumbent_bike',name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
-    {id:'upright_bike',name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'treadmill',goalMetric:30,name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'cross_trainer',goalMetric:30,name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'recumbent_bike',goalMetric:30,name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
+    {id:'upright_bike',goalMetric:30,name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'}
   ];
 
@@ -299,13 +299,24 @@
     const exerciseSnapshot=exercises.map(def=>{
       const target=targets[def.id]||{};
       const weighted=def.weight&&def.goalDirection!=='down'&&Number.isFinite(Number(def.goalKg));
-      const status=weighted?modeStatus(def):null;
+      const leveled=hasLevelProgress(def);
+      const status=leveled?modeStatus(def):null;
       return {
         id:def.id,
         name:def.name,
         bodyPart:def.label,
         target:{weight:target.weight,reps:target.reps,sets:target.sets},
-        weightProgress:status?{
+        levelProgress:status?{
+          type:isTimeLevelExercise(def)?'time':'weight',
+          mode:isTimeLevelExercise(def)?null:status.mode,
+          level:status.level,
+          currentLevelValue:status.current,
+          actualBestValue:status.actual,
+          maxValue:status.max,
+          unit:isTimeLevelExercise(def)?(def.unit||''):'kg',
+          progressPercent:status.pct
+        }:null,
+        weightProgress:weighted&&status?{
           mode:status.mode,
           level:status.level,
           currentLevelWeightKg:status.current,
@@ -314,6 +325,7 @@
         }:null,
         bestQualifiedWeightKg:weighted?achievedWeight(def):null,
         baseLv10GoalKg:Number.isFinite(Number(def.goalKg))?Number(def.goalKg):null,
+        baseLv10GoalTime:Number.isFinite(Number(def.goalMetric))?Number(def.goalMetric):null,
         qualification:weighted?qualificationFor(def):null
       };
     });
@@ -386,16 +398,18 @@
   }
 
   function weightProgressHtml(def,extraClass=''){
-    if(!def.weight||def.goalDirection==='down'||!Number.isFinite(Number(def.goalKg)))return '<span class="exercise-weight-level muted-level">重量Lv —</span>';
+    if(!hasLevelProgress(def))return '<span class="exercise-weight-level muted-level">Lv —</span>';
     const s=modeStatus(def);
-    const current=s.current==null?'—':formatNumber(s.current)+'kg';
-    const max=s.max==null?'—':formatNumber(s.max)+'kg';
-    const mid=s.milestones?.[4]!=null?formatNumber(s.milestones[4])+'kg':'—';
+    const isTime=isTimeLevelExercise(def);
+    const unit=isTime?(def.unit||''):'kg';
+    const label=isTime?'時間Lv':'重量Lv';
+    const value=v=>v==null?'—':formatNumber(v)+unit;
+    const modeChip=isTime?'':'<span class="exercise-mode-chip">Mode '+s.mode+'</span>';
     return '<span class="exercise-weight-progress '+extraClass+'">'+
-      '<span class="exercise-mode-chip">Mode '+s.mode+'</span>'+
-      '<span class="exercise-weight-line">重量Lv '+s.level+'/10 · '+current+'/'+max+'</span>'+
+      modeChip+
+      '<span class="exercise-weight-line">'+label+' '+s.level+'/10 · '+value(s.current)+'/'+value(s.max)+'</span>'+
       '<span class="level-progress-bar"><i style="width:'+s.pct+'%"></i></span>'+
-      '<span class="level-progress-scale"><b>Lv1 '+(s.milestones?.[0]!=null?formatNumber(s.milestones[0])+'kg':'—')+'</b><b>Lv5 '+mid+'</b><b>Lv10 '+max+'</b></span>'+
+      '<span class="level-progress-scale"><b>Lv1 '+value(s.milestones?.[0])+'</b><b>Lv5 '+value(s.milestones?.[4])+'</b><b>Lv10 '+value(s.max)+'</b></span>'+
     '</span>';
   }
   function exerciseLevelBadge(def){return weightProgressHtml(def);}
@@ -494,6 +508,30 @@
     return def.goalDirection==='down'?Math.min(...values):Math.max(...values);
   }
 
+  function isTimeLevelExercise(def){
+    return !def.weight&&def.metricLabel==='時間'&&Number.isFinite(Number(def.goalMetric))&&Number(def.goalMetric)>0;
+  }
+
+  function hasLevelProgress(def){
+    return (def.weight&&def.goalDirection!=='down'&&Number.isFinite(Number(def.goalKg)))||isTimeLevelExercise(def);
+  }
+
+  function achievedTimeMetric(def){
+    const values=exerciseHistory
+      .filter(r=>r.exerciseId===def.id&&Number.isFinite(Number(r.metric))&&Number(r.metric)>0)
+      .map(r=>Number(r.metric));
+    return values.length?Math.max(...values):null;
+  }
+
+  function achievedLevelValue(def){
+    return isTimeLevelExercise(def)?achievedTimeMetric(def):achievedWeight(def);
+  }
+
+  function levelGoal(def){
+    if(isTimeLevelExercise(def))return Number(def.goalMetric);
+    return exerciseGoal(def);
+  }
+
   function goalStatus(def,current,goal){
     if(!Number.isFinite(goal)||goal<=0)return {text:'目標未設定',pct:0,done:false};
     if(current==null){const q=qualificationFor(def);return {text:q.reps+'回×'+q.sets+'セットの達成記録なし',pct:0,done:false};}
@@ -509,6 +547,7 @@
   const MAX_EXERCISE_MODE=4;
   function roundToMachineStep(v){return Math.max(2.5,Math.round(v/2.5)*2.5)}
   function exerciseMode(def){
+    if(isTimeLevelExercise(def))return 1;
     const m=Math.max(1,Math.min(MAX_EXERCISE_MODE,Number(exerciseModes[def.id]||1)));
     exerciseModes[def.id]=m;
     return m;
@@ -517,23 +556,32 @@
     const start=55+(Math.max(1,mode)-1)*45;
     return Array.from({length:10},(_,i)=>start+i*5);
   }
-  function levelMilestones(goal,mode=1){
-    return modePercents(mode).map(p=>roundToMachineStep(goal*p/100));
+  function roundLevelMilestone(def,v){
+    if(isTimeLevelExercise(def)){
+      return def.unit==='秒'?Math.max(1,Math.round(v)):Math.max(.5,Math.round(v*2)/2);
+    }
+    return roundToMachineStep(v);
   }
-  function achievedLevel(current,goal,mode=1){
+  function levelMilestones(def,goal,mode=1){
+    return modePercents(mode).map(p=>roundLevelMilestone(def,goal*p/100));
+  }
+  function achievedLevel(def,current,goal,mode=1){
     if(current==null||!Number.isFinite(goal)||goal<=0)return 0;
-    const ms=levelMilestones(goal,mode);
+    const ms=levelMilestones(def,goal,mode);
     let lv=0;
-    ms.forEach((w,i)=>{if(current>=w)lv=i+1;});
+    ms.forEach((value,i)=>{if(current>=value)lv=i+1;});
     return lv;
   }
   function modeStatus(def){
-    const goal=exerciseGoal(def),mode=exerciseMode(def);
-    if(!goal)return {mode,level:0,current:null,max:null,pct:0};
-    const ms=levelMilestones(goal,mode),level=achievedLevel(achievedWeight(def),goal,mode);
-    return {mode,level,current:level>0?ms[level-1]:null,max:ms[9],milestones:ms,pct:Math.max(0,Math.min(100,level*10))};
+    const goal=levelGoal(def),mode=exerciseMode(def);
+    if(!goal)return {mode,level:0,current:null,max:null,pct:0,milestones:[]};
+    const ms=levelMilestones(def,goal,mode);
+    const value=achievedLevelValue(def);
+    const level=achievedLevel(def,value,goal,mode);
+    return {mode,level,current:level>0?ms[level-1]:null,actual:value,max:ms[9],milestones:ms,pct:Math.max(0,Math.min(100,level*10))};
   }
   function canAdvanceExerciseMode(def){
+    if(isTimeLevelExercise(def))return false;
     const s=modeStatus(def);
     return s.level>=10&&s.mode<MAX_EXERCISE_MODE;
   }
@@ -662,8 +710,8 @@
   }
 
   function currentExerciseLevel(def){
-    const goal=exerciseGoal(def);
-    return goal?achievedLevel(achievedWeight(def),goal,exerciseMode(def)):0;
+    const goal=levelGoal(def);
+    return goal?achievedLevel(def,achievedLevelValue(def),goal,exerciseMode(def)):0;
   }
 
   function ensureAchievementPopup(){
@@ -678,13 +726,18 @@
     el.onclick=e=>{if(e.target===el)el.hidden=true;};
   }
 
-  function showWeightAchievement(def,oldLevel,newLevel,weight){
+  function showWeightAchievement(def,oldLevel,newLevel,value){
     ensureAchievementPopup();
     const el=document.querySelector('#weightAchievement');
     const jumped=Math.max(1,newLevel-oldLevel);
     el.querySelector('.achievement-level').textContent='Lv '+newLevel;
     el.querySelector('.achievement-name').textContent=def.name;
-    const q=qualificationFor(def);el.querySelector('.achievement-detail').textContent=formatNumber(weight)+' kg · '+q.reps+'回 × '+q.sets+'セット達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
+    if(isTimeLevelExercise(def)){
+      el.querySelector('.achievement-detail').textContent=formatNumber(value)+(def.unit||'')+'達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
+    }else{
+      const q=qualificationFor(def);
+      el.querySelector('.achievement-detail').textContent=formatNumber(value)+' kg · '+q.reps+'回 × '+q.sets+'セット達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
+    }
     const burst=el.querySelector('.achievement-burst');
     burst.innerHTML=Array.from({length:18},(_,i)=>'<i style="--i:'+i+';--r:'+(18+(i%7)*5)+'px"></i>').join('');
     el.hidden=false;
@@ -710,7 +763,7 @@
       return;
     }
 
-    const oldLevel=(def.weight&&def.goalDirection!=='down'&&Number.isFinite(Number(def.goalKg)))?currentExerciseLevel(def):0;
+    const oldLevel=hasLevelProgress(def)?currentExerciseLevel(def):0;
     const achievementKey=def.id+':m'+exerciseMode(def);
     const now=new Date();
     exerciseHistory.push({
@@ -730,14 +783,16 @@
     renderExerciseHistory();
     renderWeightGoals();
     renderTrainingModes();
-    const q=qualificationFor(def);if(def.weight&&def.goalDirection!=='down'&&Number(t.sets)>=q.sets&&metric>=q.reps){
+    const q=qualificationFor(def);
+    const levelQualified=isTimeLevelExercise(def)||(def.weight&&def.goalDirection!=='down'&&Number(t.sets)>=q.sets&&metric>=q.reps);
+    if(hasLevelProgress(def)&&levelQualified){
       const newLevel=currentExerciseLevel(def);
       const notified=Number(weightAchievements[achievementKey]||0);
       const baseline=Math.max(oldLevel,notified);
       if(newLevel>baseline){
         weightAchievements[achievementKey]=newLevel;
         saveWeightAchievements();
-        showWeightAchievement(def,baseline,newLevel,weight);
+        showWeightAchievement(def,baseline,newLevel,isTimeLevelExercise(def)?metric:weight);
       }
     }
   }

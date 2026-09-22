@@ -1,6 +1,6 @@
 // Training timer.
 (() => {
-  const PREF_KEY='training.restTimer.v2';
+  const PREF_KEY='training.restTimer.v3';
 
   const readPrefs=()=>{
     try{
@@ -24,13 +24,20 @@
   let endAt=0;
   let tickId=null;
   let wakeLock=null;
-  let warningAudio=null;
-  let finalAudio=null;
-  let warningBeepUrl='';
-  let finalBeepUrl='';
   let quickTapTimer=null;
-  let warning20Played=false;
-  let warning10Played=false;
+  let trackUrl='';
+  let trackDuration=0;
+  let mediaPlaying=false;
+  let fallbackPreviousRemaining=remaining;
+
+  const timerAudio=new Audio();
+  timerAudio.preload='auto';
+  timerAudio.playsInline=true;
+
+  let testUrl='';
+  const testAudio=new Audio();
+  testAudio.preload='auto';
+  testAudio.playsInline=true;
 
   const supportsExplicitAudioOutput=()=>(
     window.isSecureContext &&
@@ -45,106 +52,139 @@
     return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
   };
 
-  const makeToneUrl=(kind)=>{
-    if(kind==='warning'&&warningBeepUrl)return warningBeepUrl;
-    if(kind==='final'&&finalBeepUrl)return finalBeepUrl;
-
-    const sampleRate=44100;
-    const totalSeconds=kind==='warning'?.30:1.45;
-    const samples=Math.floor(sampleRate*totalSeconds);
-    const buffer=new ArrayBuffer(44+samples*2);
-    const view=new DataView(buffer);
+  const writeWavHeader=(view,dataSize,sampleRate)=>{
     const writeText=(offset,text)=>{
       for(let i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i));
     };
-
     writeText(0,'RIFF');
-    view.setUint32(4,36+samples*2,true);
+    view.setUint32(4,36+dataSize,true);
     writeText(8,'WAVE');
     writeText(12,'fmt ');
     view.setUint32(16,16,true);
     view.setUint16(20,1,true);
     view.setUint16(22,1,true);
     view.setUint32(24,sampleRate,true);
-    view.setUint32(28,sampleRate*2,true);
-    view.setUint16(32,2,true);
-    view.setUint16(34,16,true);
+    view.setUint32(28,sampleRate,true);
+    view.setUint16(32,1,true);
+    view.setUint16(34,8,true);
     writeText(36,'data');
-    view.setUint32(40,samples*2,true);
-
-    for(let i=0;i<samples;i++){
-      const time=i/sampleRate;
-      let value=0;
-
-      if(kind==='warning'){
-        const attack=Math.min(1,time/.012);
-        const release=Math.min(1,Math.max(0,(totalSeconds-time)/.06));
-        const envelope=Math.max(0,Math.min(attack,release));
-        value=.28*envelope*Math.sin(2*Math.PI*880*time);
-      }else{
-        const notes=[
-          {start:0,end:.34,freq:660},
-          {start:.43,end:.77,freq:880},
-          {start:.86,end:1.32,freq:1100}
-        ];
-        const note=notes.find(n=>time>=n.start&&time<n.end);
-        if(note){
-          const local=time-note.start;
-          const length=note.end-note.start;
-          const attack=Math.min(1,local/.015);
-          const release=Math.min(1,Math.max(0,(length-local)/.07));
-          const envelope=Math.max(0,Math.min(attack,release));
-          value=.32*envelope*Math.sin(2*Math.PI*note.freq*local);
-        }
-      }
-
-      view.setInt16(44+i*2,Math.max(-1,Math.min(1,value))*32767,true);
-    }
-
-    const url=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
-    if(kind==='warning')warningBeepUrl=url;
-    else finalBeepUrl=url;
-    return url;
+    view.setUint32(40,dataSize,true);
   };
 
-  const ensureAudio=async(kind='final')=>{
-    let target=kind==='warning'?warningAudio:finalAudio;
-    if(!target){
-      target=new Audio(makeToneUrl(kind));
-      target.preload='auto';
-      target.playsInline=true;
-      if(kind==='warning')warningAudio=target;
-      else finalAudio=target;
+  const addTone=(samples,sampleRate,start,length,freq,amplitude=.28)=>{
+    const from=Math.max(0,Math.floor(start*sampleRate));
+    const to=Math.min(samples.length,Math.floor((start+length)*sampleRate));
+    for(let i=from;i<to;i++){
+      const local=(i/sampleRate)-start;
+      const attack=Math.min(1,local/.012);
+      const release=Math.min(1,Math.max(0,(length-local)/.05));
+      const envelope=Math.max(0,Math.min(attack,release));
+      const wave=Math.sin(2*Math.PI*freq*local);
+      const value=samples[i]+Math.round(amplitude*127*envelope*wave);
+      samples[i]=Math.max(0,Math.min(255,value));
+    }
+  };
+
+  const makeTimerTrackUrl=seconds=>{
+    seconds=Math.max(1,Math.min(3600,Number(seconds)||1));
+    const sampleRate=4000;
+    const finalTail=1.42;
+    const totalSeconds=seconds+finalTail;
+    const dataSize=Math.ceil(totalSeconds*sampleRate);
+    const buffer=new ArrayBuffer(44+dataSize);
+    const view=new DataView(buffer);
+    writeWavHeader(view,dataSize,sampleRate);
+
+    const samples=new Uint8Array(buffer,44,dataSize);
+    samples.fill(128);
+
+    // Any duration: sound whenever remaining time crosses a positive multiple of 10.
+    // Exact starting time is excluded, so 60 seconds starts silently and first chime is at 50.
+    let marker=Math.floor((seconds-.001)/10)*10;
+    for(;marker>=10;marker-=10){
+      const elapsed=seconds-marker;
+      addTone(samples,sampleRate,elapsed,.24,880,.30);
     }
 
-    if(supportsExplicitAudioOutput()){
-      if(prefs.sinkId){
-        try{
-          await target.setSinkId(prefs.sinkId);
-        }catch{
-          prefs.sinkId='';
-          prefs.sinkLabel='';
-          savePrefs();
-          try{await target.setSinkId('default');}catch{}
-        }
-      }else{
-        try{
-          if(target.sinkId&&target.sinkId!=='default')await target.setSinkId('default');
-        }catch{}
+    // Different completion sound begins exactly at 0 remaining.
+    addTone(samples,sampleRate,seconds,.28,660,.34);
+    addTone(samples,sampleRate,seconds+.40,.28,880,.34);
+    addTone(samples,sampleRate,seconds+.80,.42,1100,.36);
+
+    return URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+  };
+
+  const makeFinalTestUrl=()=>{
+    if(testUrl)return testUrl;
+    const sampleRate=4000;
+    const totalSeconds=1.42;
+    const dataSize=Math.ceil(totalSeconds*sampleRate);
+    const buffer=new ArrayBuffer(44+dataSize);
+    const view=new DataView(buffer);
+    writeWavHeader(view,dataSize,sampleRate);
+    const samples=new Uint8Array(buffer,44,dataSize);
+    samples.fill(128);
+    addTone(samples,sampleRate,0,.28,660,.34);
+    addTone(samples,sampleRate,.40,.28,880,.34);
+    addTone(samples,sampleRate,.80,.42,1100,.36);
+    testUrl=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+    return testUrl;
+  };
+
+  const applyOutput=async el=>{
+    if(!supportsExplicitAudioOutput())return;
+    if(prefs.sinkId){
+      try{
+        await el.setSinkId(prefs.sinkId);
+        return;
+      }catch{
+        prefs.sinkId='';
+        prefs.sinkLabel='';
+        savePrefs();
       }
     }
+    try{
+      if(el.sinkId&&el.sinkId!=='default')await el.setSinkId('default');
+    }catch{}
+  };
 
-    return target;
+  const prepareTrack=async(seconds,elapsed=0)=>{
+    seconds=Math.max(1,Math.min(3600,Number(seconds)||1));
+    if(trackDuration!==seconds||!timerAudio.src){
+      timerAudio.pause();
+      if(trackUrl)URL.revokeObjectURL(trackUrl);
+      trackUrl=makeTimerTrackUrl(seconds);
+      trackDuration=seconds;
+      timerAudio.src=trackUrl;
+      timerAudio.load();
+    }
+    await applyOutput(timerAudio);
+    try{
+      timerAudio.currentTime=Math.max(0,Math.min(seconds,Number(elapsed)||0));
+    }catch{}
+  };
+
+  const setMediaSessionState=state=>{
+    if(!('mediaSession'in navigator))return;
+    try{
+      navigator.mediaSession.playbackState=state;
+      if(state==='playing'&&typeof MediaMetadata!=='undefined'){
+        navigator.mediaSession.metadata=new MediaMetadata({
+          title:'Training Timer',
+          artist:'Training'
+        });
+      }
+    }catch{}
   };
 
   const statusText=()=>{
     if(prefs.sinkId&&supportsExplicitAudioOutput()){
-      return '終了音: '+(prefs.sinkLabel||'選択済みの音声出力')+'。';
+      return 'タイマー音: '+(prefs.sinkLabel||'選択済みの音声出力')+'。画面ロック中もメディア再生として継続します。';
     }
     if(supportsExplicitAudioOutput()){
-      return '終了音は端末の現在のメディア出力先に従います。必要な場合は出力先を固定できます。';
+      return 'タイマー音は端末の現在のメディア出力先に従います。画面ロック中もメディア再生として継続します。';
     }
-    return '終了音はAndroidの現在のメディア出力先に従います。イヤホン / Bluetooth接続中は通常そちらから再生されます。';
+    return 'タイマー音はAndroidの現在のメディア出力先に従います。画面ロック中も鳴りやすいよう、タイマー全体をメディアとして再生します。';
   };
 
   const style=document.createElement('style');
@@ -201,18 +241,18 @@
       <button type="button" id="restTimerResetBtn" class="secondary">リセット</button>
     </div>
     <div class="timer-custom">
-      <label><span>秒数</span><input id="restTimerCustomSeconds" type="number" min="10" max="3600" step="10" inputmode="numeric"></label>
+      <label><span>秒数</span><input id="restTimerCustomSeconds" type="number" min="1" max="3600" step="1" inputmode="numeric"></label>
       <button type="button" id="restTimerSetBtn" class="secondary">設定</button>
     </div>
     <div class="timer-audio-box">
       <div>
-        <strong>終了音</strong>
+        <strong>タイマー音</strong>
         <p id="restTimerAudioStatus" class="muted"></p>
-        <p class="timer-audio-note">Web版ではAndroidのメディア出力に従うため、イヤホン未接続時は本体スピーカーから鳴る場合があります。</p>
+        <p class="timer-audio-note">残り時間が10秒単位を通過するたびに短い音、0秒では別の終了音が鳴ります。Web版のため端末やブラウザの省電力設定によっては、ロック中の再生が止められる場合があります。</p>
       </div>
       <div class="timer-audio-actions">
         <button type="button" id="restTimerOutputBtn" class="secondary">出力先を固定</button>
-        <button type="button" id="restTimerTestBtn" class="text-btn">テスト音</button>
+        <button type="button" id="restTimerTestBtn" class="text-btn">終了音テスト</button>
       </div>
     </div>
   `;
@@ -263,7 +303,6 @@
 
     audioStatus.textContent=statusText();
     outputBtn.hidden=!supportsExplicitAudioOutput();
-    testBtn.disabled=false;
   };
 
   const releaseWakeLock=async()=>{
@@ -287,48 +326,55 @@
     }
   };
 
-  const playTone=async(kind='final')=>{
+  const fallbackChimes=(previous,current)=>{
+    if(mediaPlaying)return;
+    const first=Math.floor((duration-.001)/10)*10;
+    for(let marker=first;marker>=10;marker-=10){
+      if(previous>marker&&current<=marker){
+        playWarningFallback();
+        break;
+      }
+    }
+  };
+
+  let warningFallbackUrl='';
+  const playWarningFallback=async()=>{
     try{
-      const el=await ensureAudio(kind);
-      el.pause();
-      el.currentTime=0;
-      el.muted=false;
+      if(!warningFallbackUrl){
+        const sampleRate=4000;
+        const dataSize=Math.ceil(.26*sampleRate);
+        const buffer=new ArrayBuffer(44+dataSize);
+        const view=new DataView(buffer);
+        writeWavHeader(view,dataSize,sampleRate);
+        const samples=new Uint8Array(buffer,44,dataSize);
+        samples.fill(128);
+        addTone(samples,sampleRate,0,.24,880,.30);
+        warningFallbackUrl=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+      }
+      const el=new Audio(warningFallbackUrl);
+      el.playsInline=true;
+      await applyOutput(el);
       await el.play();
     }catch{}
   };
 
-  const playWarning=()=>playTone('warning');
-  const playFinal=()=>playTone('final');
-
-  const primeAlert=async()=>{
-    for(const kind of ['warning','final']){
-      try{
-        const el=await ensureAudio(kind);
-        el.muted=true;
-        el.currentTime=0;
-        await el.play();
-        el.pause();
-        el.currentTime=0;
-        el.muted=false;
-      }catch{}
-    }
+  const playFinalFallback=async()=>{
+    try{
+      testAudio.pause();
+      testAudio.src=makeFinalTestUrl();
+      testAudio.currentTime=0;
+      await applyOutput(testAudio);
+      await testAudio.play();
+    }catch{}
   };
 
   const sync=()=>{
     if(!running)return;
 
-    const previousRemaining=remaining;
+    const previous=fallbackPreviousRemaining;
     remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
-
-    if(!warning20Played&&previousRemaining>20&&remaining<=20&&remaining>0){
-      warning20Played=true;
-      playWarning();
-    }
-
-    if(!warning10Played&&previousRemaining>10&&remaining<=10&&remaining>0){
-      warning10Played=true;
-      playWarning();
-    }
+    fallbackPreviousRemaining=remaining;
+    fallbackChimes(previous,remaining);
 
     if(remaining<=0){
       running=false;
@@ -338,7 +384,8 @@
       render();
 
       if(navigator.vibrate)navigator.vibrate([180,100,180]);
-      playFinal();
+      if(!mediaPlaying)playFinalFallback();
+      setMediaSessionState('none');
       return;
     }
 
@@ -350,29 +397,48 @@
     tickId=setInterval(sync,250);
   };
 
-  const startTimer=()=>{
+  const startTimer=async()=>{
     if(running)return;
     if(remaining<=0)remaining=duration;
 
+    const elapsed=Math.max(0,duration-remaining);
+    await prepareTrack(duration,elapsed);
+
     endAt=Date.now()+remaining*1000;
+    fallbackPreviousRemaining=remaining;
     running=true;
     startTick();
     requestWakeLock();
-    primeAlert();
+    render();
+
+    try{
+      timerAudio.muted=false;
+      await timerAudio.play();
+      mediaPlaying=true;
+      setMediaSessionState('playing');
+    }catch{
+      mediaPlaying=false;
+      setMediaSessionState('none');
+    }
+  };
+
+  const pauseTimer=()=>{
+    remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
+    running=false;
+    endAt=0;
+    stopTick();
+    releaseWakeLock();
+    timerAudio.pause();
+    mediaPlaying=false;
+    setMediaSessionState('paused');
     render();
   };
 
   const startOrPause=()=>{
     if(running){
-      remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
-      running=false;
-      endAt=0;
-      stopTick();
-      releaseWakeLock();
-      render();
+      pauseTimer();
       return;
     }
-
     startTimer();
   };
 
@@ -381,9 +447,12 @@
     endAt=0;
     stopTick();
     releaseWakeLock();
+    timerAudio.pause();
+    try{timerAudio.currentTime=0;}catch{}
+    mediaPlaying=false;
+    setMediaSessionState('none');
     remaining=duration;
-    warning20Played=false;
-    warning10Played=false;
+    fallbackPreviousRemaining=remaining;
     render();
   };
 
@@ -391,10 +460,18 @@
     seconds=Math.round(Number(seconds));
     if(!Number.isFinite(seconds)||seconds<1)return;
 
-    seconds=Math.round(seconds/10)*10;
-    duration=Math.max(10,Math.min(3600,seconds));
+    duration=Math.max(1,Math.min(3600,seconds));
     prefs.duration=duration;
     savePrefs();
+
+    if(trackDuration!==duration){
+      timerAudio.pause();
+      if(trackUrl){
+        URL.revokeObjectURL(trackUrl);
+        trackUrl='';
+      }
+      trackDuration=0;
+    }
     reset();
   };
 
@@ -419,7 +496,6 @@
 
     try{
       const device=await navigator.mediaDevices.selectAudioOutput();
-
       if(!device||!device.deviceId||device.deviceId==='default'){
         prefs.sinkId='';
         prefs.sinkLabel='';
@@ -429,7 +505,8 @@
       }
 
       savePrefs();
-      await ensureAudio();
+      await applyOutput(timerAudio);
+      await applyOutput(testAudio);
       render();
     }catch(error){
       if(error?.name==='AbortError')return;
@@ -439,6 +516,41 @@
       render();
     }
   };
+
+  const testFinal=async()=>{
+    try{
+      testAudio.pause();
+      testAudio.src=makeFinalTestUrl();
+      testAudio.currentTime=0;
+      await applyOutput(testAudio);
+      await testAudio.play();
+    }catch{}
+  };
+
+  const primeMedia=async()=>{
+    try{
+      timerAudio.muted=true;
+      timerAudio.src=makeFinalTestUrl();
+      timerAudio.currentTime=0;
+      await timerAudio.play();
+      timerAudio.pause();
+      timerAudio.currentTime=0;
+      timerAudio.muted=false;
+      trackDuration=0;
+    }catch{}
+  };
+
+  timerAudio.addEventListener('ended',()=>{
+    mediaPlaying=false;
+    setMediaSessionState('none');
+  });
+
+  if('mediaSession'in navigator){
+    try{
+      navigator.mediaSession.setActionHandler('play',()=>{if(!running)startTimer();});
+      navigator.mediaSession.setActionHandler('pause',()=>{if(running)pauseTimer();});
+    }catch{}
+  }
 
   card.querySelectorAll('[data-timer-seconds]').forEach(btn=>{
     btn.addEventListener('click',()=>setDuration(btn.dataset.timerSeconds));
@@ -451,7 +563,7 @@
     if(event.key==='Enter')setDuration(customInput.value);
   });
   outputBtn.addEventListener('click',configureOutput);
-  testBtn.addEventListener('click',playFinal);
+  testBtn.addEventListener('click',testFinal);
 
   tab.addEventListener('click',event=>{
     event.preventDefault();
@@ -462,8 +574,8 @@
   quickBtn.addEventListener('click',event=>{
     event.preventDefault();
 
-    // Prime media immediately while this is still a direct user gesture.
-    primeAlert();
+    // Unlock media playback while we still have a direct user gesture.
+    primeMedia();
 
     if(quickTapTimer){
       clearTimeout(quickTapTimer);
@@ -487,9 +599,12 @@
   window.addEventListener('beforeunload',()=>{
     stopTick();
     releaseWakeLock();
+    timerAudio.pause();
+    testAudio.pause();
     if(quickTapTimer)clearTimeout(quickTapTimer);
-    if(warningBeepUrl)URL.revokeObjectURL(warningBeepUrl);
-    if(finalBeepUrl)URL.revokeObjectURL(finalBeepUrl);
+    if(trackUrl)URL.revokeObjectURL(trackUrl);
+    if(testUrl)URL.revokeObjectURL(testUrl);
+    if(warningFallbackUrl)URL.revokeObjectURL(warningFallbackUrl);
   });
 
   render();
