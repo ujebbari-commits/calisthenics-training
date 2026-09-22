@@ -178,7 +178,7 @@
       <button type="button" id="restTimerResetBtn" class="secondary">リセット</button>
     </div>
     <div class="timer-custom">
-      <label><span>秒数</span><input id="restTimerCustomSeconds" type="number" min="1" max="3600" step="1" inputmode="numeric"></label>
+      <label><span>秒数</span><input id="restTimerCustomSeconds" type="number" min="10" max="3600" step="10" inputmode="numeric"></label>
       <button type="button" id="restTimerSetBtn" class="secondary">設定</button>
     </div>
     <div class="timer-audio-box">
@@ -349,7 +349,8 @@
     seconds=Math.round(Number(seconds));
     if(!Number.isFinite(seconds)||seconds<1)return;
 
-    duration=Math.max(1,Math.min(3600,seconds));
+    seconds=Math.round(seconds/10)*10;
+    duration=Math.max(10,Math.min(3600,seconds));
     prefs.duration=duration;
     savePrefs();
     reset();
