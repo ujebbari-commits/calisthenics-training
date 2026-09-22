@@ -53,6 +53,7 @@ const exerciseDB={
   'カーフレイズ':{muscle:'ふくらはぎ',guide:'かかとを下げてからつま先立ち。反動で跳ねず、上でも下でもコントロールする。',q:'calf raise machine exercise proper form'},
   'レッグプレス・カーフレイズ':{muscle:'ふくらはぎ',guide:'レッグプレスのプレートに足の前半分を置き、膝をほぼ固定したまま足首だけを動かす。かかとをゆっくり下げてふくらはぎを伸ばし、つま先で押して最大まで上げる。足が滑らない位置を使い、膝をロックし切らない。',q:'leg press calf raise proper form'},
   'アブドミナルクランチ':{muscle:'腹筋',guide:'肋骨を骨盤へ近づけるように身体を丸める腹筋マシン。腕や腰で押し込まず、お腹を縮める。',q:'abdominal crunch machine proper form'},
+  'アブローラー':{muscle:'腹直筋・腹斜筋・体幹',guide:'最初は膝を床につけた膝コロで行う。お腹とお尻に力を入れて腰が反らない姿勢を保ち、ローラーを前へ転がす。腰が落ち始める手前で止め、腹筋で引き戻す。立ちコロはかなり高難度なので、膝コロを安定してできるまでは不要。',q:'ab wheel rollout kneeling proper form'},
   'リバースクランチ':{muscle:'腹筋',guide:'仰向けで膝を胸へ近づけ、最後に骨盤を少し床から持ち上げる。脚を振らず腹筋で丸める。',q:'reverse crunch proper form'},
   'デッドバグ':{muscle:'体幹',guide:'腰を床へ軽く押し付けたまま脚を交互に伸ばす。腰が浮くなら脚を遠くまで伸ばさない。',q:'dead bug exercise proper form'},
   'アシスト懸垂':{muscle:'背中・二頭筋',guide:'補助付き懸垂。アシスト重量は大きいほど楽。反動なしで胸をバー方向へ近づける。',q:'assisted pull up machine proper form'},
@@ -112,6 +113,7 @@ function prescription(role){
 function adjustedItems(key){
   const list=templates[key].items.map(([name,role])=>{
     if(name==='ベンチプレス（高重量）')return {name,role,sets:3,reps:'4〜6回',rest:'3〜4分'};
+    if(name==='アブローラー')return {name,role,sets:3,reps:'8〜12回',rest:'60〜90秒'};
     return {name,role,...prescription(role)};
   });
   if(key==='D'&&state.level<6)return list.filter(x=>x.name!=='ルーマニアンデッドリフト');
@@ -240,7 +242,7 @@ function openWorkout(key){
   document.querySelector('#workoutDesc').textContent=`${w.desc} 基本はRIR ${l.rir}。フォームが崩れる前に止める。`;
   document.querySelector('#exerciseList').innerHTML=items.map((x,i)=>{
     const d=exerciseDB[x.name]||{};const isTrack=!['warm','finisher','recovery'].includes(x.role);
-    const bodyweight=['アシスト懸垂','アシストディップス','ブルガリアンスクワット','デッドバグ','リバースクランチ'].includes(x.name);
+    const bodyweight=['アシスト懸垂','アシストディップス','ブルガリアンスクワット','デッドバグ','リバースクランチ','アブローラー'].includes(x.name);
     return `<article class="exercise" data-index="${i}" data-name="${esc(x.name)}"><div class="exercise-main"><div><h3>${esc(x.name)}</h3><p>${esc(d.muscle||'')}</p><div class="exercise-tags"><span class="tag">${esc(x.role)}</span>${x.role!=='warm'&&x.role!=='finisher'&&x.role!=='recovery'?`<span class="tag">RIR ${esc(l.rir)}</span>`:''}</div></div><div class="exercise-meta"><strong>${esc(String(x.sets))} × ${esc(String(x.reps))}</strong><span>休憩 ${esc(x.rest)}</span></div></div>${guideHTML(x.name)}${isTrack?`<div class="quick-log"><span>終了後だけ入力（任意）</span><label>${bodyweight?'補助/負荷 kg':'重量 kg'}<input class="log-weight" type="number" min="0" step="0.5" inputmode="decimal" placeholder="例 25"></label><label>ベスト回数<input class="log-reps" type="number" min="0" step="1" inputmode="numeric" placeholder="例 10"></label></div>`:''}</article>`;
   }).join('');
   document.querySelector('#workoutNotes').value='';
