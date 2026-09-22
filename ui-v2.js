@@ -18,6 +18,7 @@
     {id:'hip_abductor',goalKg:70,name:'ヒップアブダクター',desc:'脚を外側へ開いてお尻の横側を鍛える。',muscle:'legs',label:'臀部',weight:true,reps:'12'},
     {id:'hip_adductor',goalKg:70,name:'ヒップアダクター',desc:'脚を内側へ閉じて内ももを鍛える。',muscle:'legs',label:'内もも',weight:true,reps:'12'},
     {id:'ab_crunch',goalKg:55,name:'アブドミナル',desc:'座って上体を丸め、腹筋を鍛えるマシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
+    {id:'ab_roller',name:'アブローラー',desc:'膝コロを基本に、腹筋で体幹を固定しながらローラーを前へ転がして戻す。腰が反らない範囲で行う。',muscle:'core',label:'腹',weight:false,reps:'8–12',defaultSets:3},
     {id:'rotary_torso',goalKg:45,name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
     {id:'lat_pulldown',goalKg:60,name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引いて背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'dead_hang',name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,reps:'20–40秒'},
@@ -47,13 +48,13 @@
         ['heavy_bench_press','main'],['chest_press','secondary'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['ab_crunch','core'],['ab_roller','core'],['rotary_torso','core']
       ]},
       {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
         ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['chest_press','secondary'],['lat_pulldown','secondary']
       ]},
       {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core'],['ab_roller','core']
       ]}
     ],
     5:[
@@ -64,13 +65,13 @@
         ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
       ]},
       {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core'],['ab_roller','core']
       ]},
       {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
         ['pec_fly','main'],['chest_supported_row','main'],['lat_pulldown','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core'],['ab_roller','core']
       ]}
     ]
   };
