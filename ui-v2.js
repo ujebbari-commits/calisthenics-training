@@ -206,12 +206,6 @@
     catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEEKLY PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill">種目タブと共通</span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
     if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
 
-    const weightGoalCard=document.createElement('section');
-    weightGoalCard.className='card weight-goals-card';
-    weightGoalCard.dataset.appSection='weights';
-    weightGoalCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEIGHT LEVELS</p><h2>重量目標</h2></div><span class="pill">種目別の達成基準</span></div><div id="weightGoalsGrid" class="weight-goals-grid"></div>';
-    if(level)level.parentNode.insertBefore(weightGoalCard,level);else shell.appendChild(weightGoalCard);
-
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
     if(history)history.dataset.appSection='history';
 
@@ -239,7 +233,7 @@
     nav.id='simpleTabs';
     nav.className='simple-tabs';
     nav.innerHTML=[
-      ['today','今日'],['exercises','種目'],['program','プログラム'],['weights','重量目標'],['progress','進捗'],['history','履歴'],['settings','設定']
+      ['today','今日'],['exercises','種目'],['program','プログラム'],['progress','進捗'],['history','履歴'],['settings','設定']
     ].map(([id,label])=>'<button type="button" data-simple-tab="'+id+'">'+label+'</button>').join('');
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
@@ -281,7 +275,6 @@
     renderTodayWorkoutInline();
     renderCatalogProgram();
     renderTrainingModes();
-    renderWeightGoals();
     const modeSelect=document.querySelector('#programModeSelect');
     if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{
       applyCatalogTemplates();
@@ -382,14 +375,13 @@
   }
 
   function showTab(id){
-    if(!['today','exercises','program','weights','progress','history','settings'].includes(id))id='today';
+    if(!['today','exercises','program','progress','history','settings'].includes(id))id='today';
     if(id==='program'){ui.openProgramDay=null;ui.openProgramExercise=null;}
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
     document.querySelectorAll('[data-simple-tab]').forEach(b=>b.classList.toggle('active',b.dataset.simpleTab===id));
     if(id==='today'){renderTodayMenuSelector();renderTodayWorkoutInline();}
     if(id==='program'){renderTrainingModes();renderCatalogProgram();}
-    if(id==='weights')renderWeightGoals();
     window.scrollTo(0,0);
   }
 
