@@ -1,8 +1,7 @@
-// Rest timer with safe audio routing.
-// Audible alerts are only enabled when the browser lets the user select a specific
-// audio-output device. There is deliberately no fallback to the default output.
+// Training timer.
 (() => {
-  const PREF_KEY='training.restTimer.v1';
+  const PREF_KEY='training.restTimer.v2';
+
   const readPrefs=()=>{
     try{
       const raw=JSON.parse(localStorage.getItem(PREF_KEY)||'null')||{};
@@ -15,6 +14,7 @@
       return {duration:90,sinkId:'',sinkLabel:''};
     }
   };
+
   const prefs=readPrefs();
   const savePrefs=()=>localStorage.setItem(PREF_KEY,JSON.stringify(prefs));
 
@@ -26,6 +26,7 @@
   let wakeLock=null;
   let audio=null;
   let beepUrl='';
+  let quickTapTimer=null;
 
   const supportsExplicitAudioOutput=()=>(
     window.isSecureContext &&
@@ -40,19 +41,18 @@
     return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
   };
 
-  const looksLikeBuiltInSpeaker=label=>{
-    const s=String(label||'').toLowerCase();
-    return /built.?in\s+speaker|internal\s+speaker|phone\s+speaker|device\s+speaker|内蔵.*スピーカー|本体.*スピーカー/.test(s);
-  };
-
   const makeBeepUrl=()=>{
     if(beepUrl)return beepUrl;
+
     const sampleRate=44100;
     const totalSeconds=.62;
     const samples=Math.floor(sampleRate*totalSeconds);
     const buffer=new ArrayBuffer(44+samples*2);
     const view=new DataView(buffer);
-    const writeText=(offset,text)=>{for(let i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i));};
+    const writeText=(offset,text)=>{
+      for(let i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i));
+    };
+
     writeText(0,'RIFF');
     view.setUint32(4,36+samples*2,true);
     writeText(8,'WAVE');
@@ -72,6 +72,7 @@
       let local=-1;
       if(t<.20)local=t;
       else if(t>=.32&&t<.54)local=t-.32;
+
       let value=0;
       if(local>=0){
         const span=.20;
@@ -88,35 +89,49 @@
   };
 
   const ensureAudio=async()=>{
-    if(!supportsExplicitAudioOutput()||!prefs.sinkId)return null;
     if(!audio){
       audio=new Audio(makeBeepUrl());
       audio.preload='auto';
       audio.playsInline=true;
     }
 
-    const devices=await navigator.mediaDevices.enumerateDevices();
-    const output=devices.find(d=>d.kind==='audiooutput'&&d.deviceId===prefs.sinkId);
-    if(!output)throw new Error('Selected output is no longer available');
-    if(looksLikeBuiltInSpeaker(output.label||prefs.sinkLabel))throw new Error('Built-in speaker is not allowed');
+    if(supportsExplicitAudioOutput()){
+      if(prefs.sinkId){
+        try{
+          await audio.setSinkId(prefs.sinkId);
+        }catch{
+          prefs.sinkId='';
+          prefs.sinkLabel='';
+          savePrefs();
+          try{await audio.setSinkId('default');}catch{}
+        }
+      }else{
+        try{
+          if(audio.sinkId&&audio.sinkId!=='default')await audio.setSinkId('default');
+        }catch{}
+      }
+    }
 
-    await audio.setSinkId(prefs.sinkId);
     return audio;
   };
 
   const statusText=()=>{
-    if(!supportsExplicitAudioOutput()){
-      return 'このブラウザでは音声出力先を固定できないため、終了音はOFFです。本体スピーカーへフォールバックしません。';
+    if(prefs.sinkId&&supportsExplicitAudioOutput()){
+      return '終了音: '+(prefs.sinkLabel||'選択済みの音声出力')+'。';
     }
-    if(!prefs.sinkId){
-      return '終了音はOFFです。「音声出力を設定」からイヤホン / Bluetooth機器を選ぶと、その機器だけで鳴ります。';
+    if(supportsExplicitAudioOutput()){
+      return '終了音は端末の現在のメディア出力先に従います。必要な場合は出力先を固定できます。';
     }
-    return '終了音: '+(prefs.sinkLabel||'選択済みの外部出力')+'。機器が切断された場合は無音にします。';
+    return '終了音はAndroidの現在のメディア出力先に従います。イヤホン / Bluetooth接続中は通常そちらから再生されます。';
   };
 
   const style=document.createElement('style');
   style.textContent=`
+    .topbar-actions{display:flex;gap:8px;align-items:center}
+    .quick-timer-btn{touch-action:manipulation;position:relative}
+    .quick-timer-btn::after{content:'30/60';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:.52rem;font-weight:850;color:var(--muted);white-space:nowrap;pointer-events:none}
     .timer-card{max-width:680px;width:100%;justify-self:center}
+    .timer-card .section-head{margin-bottom:2px}
     .timer-display{font-size:clamp(4rem,16vw,7rem);font-weight:950;letter-spacing:.03em;line-height:1;text-align:center;padding:26px 8px;color:var(--accent);font-variant-numeric:tabular-nums}
     .timer-presets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
     .timer-presets button{border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px 8px;font:inherit;font-weight:800;cursor:pointer}
@@ -131,20 +146,25 @@
     .timer-audio-note{color:var(--muted);opacity:.9}
     .timer-audio-actions{display:grid;gap:6px}
     .timer-audio-actions button{white-space:nowrap}
-    @media(max-width:700px){.timer-presets{grid-template-columns:repeat(3,1fr)}.timer-audio-box{grid-template-columns:1fr}.timer-audio-actions{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){
+      .timer-presets{grid-template-columns:repeat(3,1fr)}
+      .timer-audio-box{grid-template-columns:1fr}
+      .timer-audio-actions{grid-template-columns:1fr 1fr}
+    }
   `;
   document.head.appendChild(style);
 
   const shell=document.querySelector('.shell');
   const nav=document.querySelector('#simpleTabs');
-  if(!shell||!nav)return;
+  const themeBtn=document.querySelector('#themeBtn');
+  if(!shell||!nav||!themeBtn)return;
 
   const card=document.createElement('section');
   card.className='card timer-card app-section-hidden';
   card.dataset.appSection='timer';
   card.innerHTML=`
     <div class="section-head simple-head">
-      <div><p class="eyebrow">REST TIMER</p><h2>タイマー</h2></div>
+      <div><h2>タイマー</h2></div>
     </div>
     <div id="restTimerDisplay" class="timer-display">01:30</div>
     <div class="timer-presets">
@@ -164,12 +184,12 @@
     </div>
     <div class="timer-audio-box">
       <div>
-        <strong>終了音の出力先</strong>
+        <strong>終了音</strong>
         <p id="restTimerAudioStatus" class="muted"></p>
-        <p class="timer-audio-note">本体スピーカーへの自動フォールバックはしません。未設定・未対応・切断時は音を鳴らさず、対応端末ではバイブのみ使います。</p>
+        <p class="timer-audio-note">Web版ではAndroidのメディア出力に従うため、イヤホン未接続時は本体スピーカーから鳴る場合があります。</p>
       </div>
       <div class="timer-audio-actions">
-        <button type="button" id="restTimerOutputBtn" class="secondary">音声出力を設定</button>
+        <button type="button" id="restTimerOutputBtn" class="secondary">出力先を固定</button>
         <button type="button" id="restTimerTestBtn" class="text-btn">テスト音</button>
       </div>
     </div>
@@ -183,6 +203,23 @@
   const exercisesTab=nav.querySelector('[data-simple-tab="exercises"]');
   nav.insertBefore(tab,exercisesTab||null);
 
+  const topbar=themeBtn.parentElement;
+  let actions=topbar.querySelector('.topbar-actions');
+  if(!actions){
+    actions=document.createElement('div');
+    actions.className='topbar-actions';
+    topbar.insertBefore(actions,themeBtn);
+    actions.appendChild(themeBtn);
+  }
+
+  const quickBtn=document.createElement('button');
+  quickBtn.type='button';
+  quickBtn.className='icon-btn quick-timer-btn';
+  quickBtn.setAttribute('aria-label','タイマー。1タップで30秒、2連続タップで60秒');
+  quickBtn.title='1タップ: 30秒 / 2タップ: 60秒';
+  quickBtn.textContent='⏱';
+  actions.insertBefore(quickBtn,themeBtn);
+
   const display=card.querySelector('#restTimerDisplay');
   const startBtn=card.querySelector('#restTimerStartBtn');
   const resetBtn=card.querySelector('#restTimerResetBtn');
@@ -195,11 +232,16 @@
   const render=()=>{
     display.textContent=formatTime(remaining);
     startBtn.textContent=running?'一時停止':'開始';
+
     if(document.activeElement!==customInput)customInput.value=String(duration);
-    card.querySelectorAll('[data-timer-seconds]').forEach(btn=>btn.classList.toggle('active',Number(btn.dataset.timerSeconds)===duration));
+
+    card.querySelectorAll('[data-timer-seconds]').forEach(btn=>{
+      btn.classList.toggle('active',Number(btn.dataset.timerSeconds)===duration);
+    });
+
     audioStatus.textContent=statusText();
-    outputBtn.disabled=!supportsExplicitAudioOutput();
-    testBtn.disabled=!supportsExplicitAudioOutput()||!prefs.sinkId;
+    outputBtn.hidden=!supportsExplicitAudioOutput();
+    testBtn.disabled=false;
   };
 
   const releaseWakeLock=async()=>{
@@ -217,31 +259,25 @@
   };
 
   const stopTick=()=>{
-    if(tickId){clearInterval(tickId);tickId=null;}
+    if(tickId){
+      clearInterval(tickId);
+      tickId=null;
+    }
   };
 
   const playAlert=async()=>{
-    if(!prefs.sinkId||!supportsExplicitAudioOutput())return;
     try{
       const el=await ensureAudio();
-      if(!el)return;
       el.pause();
       el.currentTime=0;
       el.muted=false;
       await el.play();
-    }catch{
-      prefs.sinkId='';
-      prefs.sinkLabel='';
-      savePrefs();
-      render();
-    }
+    }catch{}
   };
 
   const primeAlert=async()=>{
-    if(!prefs.sinkId||!supportsExplicitAudioOutput())return;
     try{
       const el=await ensureAudio();
-      if(!el)return;
       el.muted=true;
       el.currentTime=0;
       await el.play();
@@ -253,6 +289,7 @@
 
   const sync=()=>{
     if(!running)return;
+
     remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
     if(remaining<=0){
       running=false;
@@ -260,16 +297,30 @@
       stopTick();
       releaseWakeLock();
       render();
+
       if(navigator.vibrate)navigator.vibrate([180,100,180]);
       playAlert();
       return;
     }
+
     render();
   };
 
   const startTick=()=>{
     stopTick();
     tickId=setInterval(sync,250);
+  };
+
+  const startTimer=()=>{
+    if(running)return;
+    if(remaining<=0)remaining=duration;
+
+    endAt=Date.now()+remaining*1000;
+    running=true;
+    startTick();
+    requestWakeLock();
+    primeAlert();
+    render();
   };
 
   const startOrPause=()=>{
@@ -282,13 +333,8 @@
       render();
       return;
     }
-    if(remaining<=0)remaining=duration;
-    endAt=Date.now()+remaining*1000;
-    running=true;
-    startTick();
-    requestWakeLock();
-    primeAlert();
-    render();
+
+    startTimer();
   };
 
   const reset=()=>{
@@ -303,26 +349,43 @@
   const setDuration=seconds=>{
     seconds=Math.round(Number(seconds));
     if(!Number.isFinite(seconds)||seconds<1)return;
+
     duration=Math.max(1,Math.min(3600,seconds));
     prefs.duration=duration;
     savePrefs();
     reset();
   };
 
+  const showTimerTab=()=>{
+    document.querySelectorAll('[data-app-section]').forEach(el=>{
+      el.classList.toggle('app-section-hidden',el!==card);
+    });
+    document.querySelectorAll('[data-simple-tab]').forEach(btn=>{
+      btn.classList.toggle('active',btn===tab);
+    });
+    window.scrollTo(0,0);
+  };
+
+  const quickStart=seconds=>{
+    setDuration(seconds);
+    showTimerTab();
+    startTimer();
+  };
+
   const configureOutput=async()=>{
     if(!supportsExplicitAudioOutput())return;
+
     try{
       const device=await navigator.mediaDevices.selectAudioOutput();
-      if(!device||!device.deviceId||device.deviceId==='default'||looksLikeBuiltInSpeaker(device.label)){
+
+      if(!device||!device.deviceId||device.deviceId==='default'){
         prefs.sinkId='';
         prefs.sinkLabel='';
-        savePrefs();
-        render();
-        audioStatus.textContent='既定/内蔵スピーカーは使用しません。イヤホン / Bluetooth機器を選択してください。';
-        return;
+      }else{
+        prefs.sinkId=device.deviceId;
+        prefs.sinkLabel=device.label||'選択済みの音声出力';
       }
-      prefs.sinkId=device.deviceId;
-      prefs.sinkLabel=device.label||'選択済みの外部出力';
+
       savePrefs();
       await ensureAudio();
       render();
@@ -335,22 +398,42 @@
     }
   };
 
-  const testAudio=async()=>{await playAlert();};
+  card.querySelectorAll('[data-timer-seconds]').forEach(btn=>{
+    btn.addEventListener('click',()=>setDuration(btn.dataset.timerSeconds));
+  });
 
-  card.querySelectorAll('[data-timer-seconds]').forEach(btn=>btn.addEventListener('click',()=>setDuration(btn.dataset.timerSeconds)));
   startBtn.addEventListener('click',startOrPause);
   resetBtn.addEventListener('click',reset);
   setBtn.addEventListener('click',()=>setDuration(customInput.value));
-  customInput.addEventListener('keydown',event=>{if(event.key==='Enter')setDuration(customInput.value);});
+  customInput.addEventListener('keydown',event=>{
+    if(event.key==='Enter')setDuration(customInput.value);
+  });
   outputBtn.addEventListener('click',configureOutput);
-  testBtn.addEventListener('click',testAudio);
+  testBtn.addEventListener('click',playAlert);
 
   tab.addEventListener('click',event=>{
     event.preventDefault();
     event.stopPropagation();
-    document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el!==card));
-    document.querySelectorAll('[data-simple-tab]').forEach(btn=>btn.classList.toggle('active',btn===tab));
-    window.scrollTo(0,0);
+    showTimerTab();
+  });
+
+  quickBtn.addEventListener('click',event=>{
+    event.preventDefault();
+
+    // Prime media immediately while this is still a direct user gesture.
+    primeAlert();
+
+    if(quickTapTimer){
+      clearTimeout(quickTapTimer);
+      quickTapTimer=null;
+      quickStart(60);
+      return;
+    }
+
+    quickTapTimer=setTimeout(()=>{
+      quickTapTimer=null;
+      quickStart(30);
+    },280);
   });
 
   document.addEventListener('visibilitychange',()=>{
@@ -362,6 +445,7 @@
   window.addEventListener('beforeunload',()=>{
     stopTick();
     releaseWakeLock();
+    if(quickTapTimer)clearTimeout(quickTapTimer);
     if(beepUrl)URL.revokeObjectURL(beepUrl);
   });
 
