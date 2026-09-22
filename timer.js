@@ -45,7 +45,7 @@
     if(beepUrl)return beepUrl;
 
     const sampleRate=44100;
-    const totalSeconds=.62;
+    const totalSeconds=2.4;
     const samples=Math.floor(sampleRate*totalSeconds);
     const buffer=new ArrayBuffer(44+samples*2);
     const view=new DataView(buffer);
@@ -69,17 +69,16 @@
 
     for(let i=0;i<samples;i++){
       const t=i/sampleRate;
-      let local=-1;
-      if(t<.20)local=t;
-      else if(t>=.32&&t<.54)local=t-.32;
+      const patternPeriod=.48;
+      const pulseLength=.24;
+      const local=t%patternPeriod;
 
       let value=0;
-      if(local>=0){
-        const span=.20;
-        const attack=Math.min(1,local/.012);
-        const release=Math.min(1,Math.max(0,(span-local)/.035));
+      if(t<2.16&&local<pulseLength){
+        const attack=Math.min(1,local/.015);
+        const release=Math.min(1,Math.max(0,(pulseLength-local)/.05));
         const envelope=Math.max(0,Math.min(attack,release));
-        value=.28*envelope*Math.sin(2*Math.PI*880*local);
+        value=.30*envelope*Math.sin(2*Math.PI*880*local);
       }
       view.setInt16(44+i*2,Math.max(-1,Math.min(1,value))*32767,true);
     }
