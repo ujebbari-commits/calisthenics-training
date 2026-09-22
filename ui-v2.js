@@ -24,6 +24,7 @@
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
+    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（高重量）',desc:'低回数・高重量で行うバーベルベンチプレス。4〜6回×3セットを基本にし、重量Lvは5回×3セットを正しいフォームで達成した重量から判定する。セーフティを設定し、限界挑戦時はスポッターを使う。',muscle:'chest',label:'胸・三頭',weight:true,reps:'4–6',defaultSets:3,qualifyReps:5,qualifySets:3},
     {id:'shoulder_press',goalKg:40,name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'seated_row',goalKg:60,name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'chest_supported_row',goalKg:70,name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
@@ -43,7 +44,7 @@
   const catalogPrograms={
     4:[
       {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'上半身の基本種目をまとめる日。',items:[
-        ['chest_press','main'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
+        ['heavy_bench_press','main'],['chest_press','secondary'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
         ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['ab_crunch','core'],['rotary_torso','core']
@@ -57,7 +58,7 @@
     ],
     5:[
       {key:'A',code:'PUSH',title:'Push · 胸 / 肩 / 三頭',desc:'押す筋肉を集中して鍛える日。',items:[
-        ['chest_press','main'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+        ['heavy_bench_press','main'],['chest_press','secondary'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'PULL',title:'Pull · 背中 / 二頭 / 握力',desc:'引く筋肉と懸垂の土台を鍛える日。',items:[
         ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
@@ -199,7 +200,7 @@
     const weightGoalCard=document.createElement('section');
     weightGoalCard.className='card weight-goals-card';
     weightGoalCard.dataset.appSection='weights';
-    weightGoalCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEIGHT LEVELS</p><h2>重量目標</h2></div><span class="pill">12回 × 3セット</span></div><div id="weightGoalsGrid" class="weight-goals-grid"></div>';
+    weightGoalCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEIGHT LEVELS</p><h2>重量目標</h2></div><span class="pill">種目別の達成基準</span></div><div id="weightGoalsGrid" class="weight-goals-grid"></div>';
     if(level)level.parentNode.insertBefore(weightGoalCard,level);else shell.appendChild(weightGoalCard);
 
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
@@ -306,7 +307,8 @@
           progressPercent:status.pct
         }:null,
         bestQualifiedWeightKg:weighted?achievedWeight(def):null,
-        baseLv10GoalKg:Number.isFinite(Number(def.goalKg))?Number(def.goalKg):null
+        baseLv10GoalKg:Number.isFinite(Number(def.goalKg))?Number(def.goalKg):null,
+        qualification:weighted?qualificationFor(def):null
       };
     });
     return {
@@ -462,11 +464,19 @@
     });
   }
 
+  function qualificationFor(def){
+    return {
+      sets:Math.max(1,Number(def.qualifySets||3)),
+      reps:Math.max(1,Number(def.qualifyReps||12))
+    };
+  }
+
   function qualifiedWeightRecords(def){
+    const q=qualificationFor(def);
     return exerciseHistory.filter(r=>
       r.exerciseId===def.id &&
-      Number(r.sets)>=3 &&
-      Number(r.metric)>=12 &&
+      Number(r.sets)>=q.sets &&
+      Number(r.metric)>=q.reps &&
       Number.isFinite(Number(r.weight)) &&
       Number(r.weight)>0
     );
@@ -481,7 +491,7 @@
 
   function goalStatus(def,current,goal){
     if(!Number.isFinite(goal)||goal<=0)return {text:'目標未設定',pct:0,done:false};
-    if(current==null)return {text:'12回×3セットの達成記録なし',pct:0,done:false};
+    if(current==null){const q=qualificationFor(def);return {text:q.reps+'回×'+q.sets+'セットの達成記録なし',pct:0,done:false};}
     if(def.goalDirection==='down'){
       if(current<=goal)return {text:'達成',pct:100,done:true};
       const diff=current-goal;
@@ -629,7 +639,7 @@
     const jumped=Math.max(1,newLevel-oldLevel);
     el.querySelector('.achievement-level').textContent='Lv '+newLevel;
     el.querySelector('.achievement-name').textContent=def.name;
-    el.querySelector('.achievement-detail').textContent=formatNumber(weight)+' kg · 12回 × 3セット達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
+    const q=qualificationFor(def);el.querySelector('.achievement-detail').textContent=formatNumber(weight)+' kg · '+q.reps+'回 × '+q.sets+'セット達成'+(jumped>1?' · '+jumped+' Lvアップ':'');
     const burst=el.querySelector('.achievement-burst');
     burst.innerHTML=Array.from({length:18},(_,i)=>'<i style="--i:'+i+';--r:'+(18+(i%7)*5)+'px"></i>').join('');
     el.hidden=false;
@@ -675,7 +685,7 @@
     renderExerciseHistory();
     renderWeightGoals();
     renderTrainingModes();
-    if(def.weight&&def.goalDirection!=='down'&&Number(t.sets)>=3&&metric>=12){
+    const q=qualificationFor(def);if(def.weight&&def.goalDirection!=='down'&&Number(t.sets)>=q.sets&&metric>=q.reps){
       const newLevel=currentExerciseLevel(def);
       const notified=Number(weightAchievements[achievementKey]||0);
       const baseline=Math.max(oldLevel,notified);
