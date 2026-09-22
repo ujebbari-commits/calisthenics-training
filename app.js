@@ -32,6 +32,7 @@ const levels=[
 
 const exerciseDB={
   'チェストプレス':{muscle:'胸・三頭筋',guide:'座ってバーを前へ押す胸の基本マシン。肩をすくめず、胸を軽く張る。押すときは力強く、戻すときは2〜3秒かけてコントロール。',q:'chest press machine exercise proper form'},
+  'ベンチプレス（高重量）':{muscle:'胸・三頭筋・肩前部',guide:'バーベルを胸の中央〜やや下へコントロールして下ろし、肩甲骨をベンチへ安定させたまま押す。低回数・高重量なのでセーフティを適切な高さに設定し、限界に近い重量ではスポッターを使う。毎セット完全失敗まで潰れに行かない。',q:'barbell bench press heavy low reps proper form safety rack'},
   'インクラインチェストプレス':{muscle:'上胸・三頭筋',guide:'少し斜め上へ押すチェストプレス。上胸と肩前部を使う。腰を大きく反らさず、肩甲骨をシートへ安定させる。',q:'incline chest press machine exercise form'},
   'ラットプルダウン':{muscle:'広背筋・二頭筋',guide:'頭上のバーを胸上部へ引く背中の基本種目。胸を軽く上げ、肘を下へ引く。バーを首の後ろへ下ろさない。',q:'lat pulldown machine proper form'},
   'シーテッドロー':{muscle:'背中・二頭筋',guide:'座ってハンドルを手前へ引く。肩をすくめず、肘を後ろへ。戻すときも背中が丸まりすぎない範囲でコントロールする。',q:'seated row machine proper form'},
@@ -109,7 +110,10 @@ function prescription(role){
 }
 
 function adjustedItems(key){
-  const list=templates[key].items.map(([name,role])=>({name,role,...prescription(role)}));
+  const list=templates[key].items.map(([name,role])=>{
+    if(name==='ベンチプレス（高重量）')return {name,role,sets:3,reps:'4〜6回',rest:'3〜4分'};
+    return {name,role,...prescription(role)};
+  });
   if(key==='D'&&state.level<6)return list.filter(x=>x.name!=='ルーマニアンデッドリフト');
   if(key==='C'&&state.level<3)return list.filter(x=>x.name!=='アシスト懸垂');
   if(state.level<4)return list.filter(x=>x.name!=='ショートフィニッシャー');
