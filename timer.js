@@ -529,13 +529,14 @@
 
   const primeMedia=async()=>{
     try{
-      testAudio.muted=true;
-      testAudio.src=makeFinalTestUrl();
-      testAudio.currentTime=0;
-      await testAudio.play();
-      testAudio.pause();
-      testAudio.currentTime=0;
-      testAudio.muted=false;
+      timerAudio.muted=true;
+      timerAudio.src=makeFinalTestUrl();
+      timerAudio.currentTime=0;
+      await timerAudio.play();
+      timerAudio.pause();
+      timerAudio.currentTime=0;
+      timerAudio.muted=false;
+      trackDuration=0;
     }catch{}
   };
 
