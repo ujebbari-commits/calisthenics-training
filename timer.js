@@ -24,9 +24,13 @@
   let endAt=0;
   let tickId=null;
   let wakeLock=null;
-  let audio=null;
-  let beepUrl='';
+  let warningAudio=null;
+  let finalAudio=null;
+  let warningBeepUrl='';
+  let finalBeepUrl='';
   let quickTapTimer=null;
+  let warning20Played=false;
+  let warning10Played=false;
 
   const supportsExplicitAudioOutput=()=>(
     window.isSecureContext &&
@@ -41,11 +45,12 @@
     return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
   };
 
-  const makeBeepUrl=()=>{
-    if(beepUrl)return beepUrl;
+  const makeToneUrl=(kind)=>{
+    if(kind==='warning'&&warningBeepUrl)return warningBeepUrl;
+    if(kind==='final'&&finalBeepUrl)return finalBeepUrl;
 
     const sampleRate=44100;
-    const totalSeconds=2.4;
+    const totalSeconds=kind==='warning'?.30:1.45;
     const samples=Math.floor(sampleRate*totalSeconds);
     const buffer=new ArrayBuffer(44+samples*2);
     const view=new DataView(buffer);
@@ -68,50 +73,68 @@
     view.setUint32(40,samples*2,true);
 
     for(let i=0;i<samples;i++){
-      const t=i/sampleRate;
-      const patternPeriod=.48;
-      const pulseLength=.24;
-      const local=t%patternPeriod;
-
+      const time=i/sampleRate;
       let value=0;
-      if(t<2.16&&local<pulseLength){
-        const attack=Math.min(1,local/.015);
-        const release=Math.min(1,Math.max(0,(pulseLength-local)/.05));
+
+      if(kind==='warning'){
+        const attack=Math.min(1,time/.012);
+        const release=Math.min(1,Math.max(0,(totalSeconds-time)/.06));
         const envelope=Math.max(0,Math.min(attack,release));
-        value=.30*envelope*Math.sin(2*Math.PI*880*local);
+        value=.28*envelope*Math.sin(2*Math.PI*880*time);
+      }else{
+        const notes=[
+          {start:0,end:.34,freq:660},
+          {start:.43,end:.77,freq:880},
+          {start:.86,end:1.32,freq:1100}
+        ];
+        const note=notes.find(n=>time>=n.start&&time<n.end);
+        if(note){
+          const local=time-note.start;
+          const length=note.end-note.start;
+          const attack=Math.min(1,local/.015);
+          const release=Math.min(1,Math.max(0,(length-local)/.07));
+          const envelope=Math.max(0,Math.min(attack,release));
+          value=.32*envelope*Math.sin(2*Math.PI*note.freq*local);
+        }
       }
+
       view.setInt16(44+i*2,Math.max(-1,Math.min(1,value))*32767,true);
     }
 
-    beepUrl=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
-    return beepUrl;
+    const url=URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+    if(kind==='warning')warningBeepUrl=url;
+    else finalBeepUrl=url;
+    return url;
   };
 
-  const ensureAudio=async()=>{
-    if(!audio){
-      audio=new Audio(makeBeepUrl());
-      audio.preload='auto';
-      audio.playsInline=true;
+  const ensureAudio=async(kind='final')=>{
+    let target=kind==='warning'?warningAudio:finalAudio;
+    if(!target){
+      target=new Audio(makeToneUrl(kind));
+      target.preload='auto';
+      target.playsInline=true;
+      if(kind==='warning')warningAudio=target;
+      else finalAudio=target;
     }
 
     if(supportsExplicitAudioOutput()){
       if(prefs.sinkId){
         try{
-          await audio.setSinkId(prefs.sinkId);
+          await target.setSinkId(prefs.sinkId);
         }catch{
           prefs.sinkId='';
           prefs.sinkLabel='';
           savePrefs();
-          try{await audio.setSinkId('default');}catch{}
+          try{await target.setSinkId('default');}catch{}
         }
       }else{
         try{
-          if(audio.sinkId&&audio.sinkId!=='default')await audio.setSinkId('default');
+          if(target.sinkId&&target.sinkId!=='default')await target.setSinkId('default');
         }catch{}
       }
     }
 
-    return audio;
+    return target;
   };
 
   const statusText=()=>{
@@ -264,9 +287,9 @@
     }
   };
 
-  const playAlert=async()=>{
+  const playTone=async(kind='final')=>{
     try{
-      const el=await ensureAudio();
+      const el=await ensureAudio(kind);
       el.pause();
       el.currentTime=0;
       el.muted=false;
@@ -274,22 +297,39 @@
     }catch{}
   };
 
+  const playWarning=()=>playTone('warning');
+  const playFinal=()=>playTone('final');
+
   const primeAlert=async()=>{
-    try{
-      const el=await ensureAudio();
-      el.muted=true;
-      el.currentTime=0;
-      await el.play();
-      el.pause();
-      el.currentTime=0;
-      el.muted=false;
-    }catch{}
+    for(const kind of ['warning','final']){
+      try{
+        const el=await ensureAudio(kind);
+        el.muted=true;
+        el.currentTime=0;
+        await el.play();
+        el.pause();
+        el.currentTime=0;
+        el.muted=false;
+      }catch{}
+    }
   };
 
   const sync=()=>{
     if(!running)return;
 
+    const previousRemaining=remaining;
     remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
+
+    if(!warning20Played&&previousRemaining>20&&remaining<=20&&remaining>0){
+      warning20Played=true;
+      playWarning();
+    }
+
+    if(!warning10Played&&previousRemaining>10&&remaining<=10&&remaining>0){
+      warning10Played=true;
+      playWarning();
+    }
+
     if(remaining<=0){
       running=false;
       endAt=0;
@@ -298,7 +338,7 @@
       render();
 
       if(navigator.vibrate)navigator.vibrate([180,100,180]);
-      playAlert();
+      playFinal();
       return;
     }
 
@@ -342,6 +382,8 @@
     stopTick();
     releaseWakeLock();
     remaining=duration;
+    warning20Played=false;
+    warning10Played=false;
     render();
   };
 
@@ -409,7 +451,7 @@
     if(event.key==='Enter')setDuration(customInput.value);
   });
   outputBtn.addEventListener('click',configureOutput);
-  testBtn.addEventListener('click',playAlert);
+  testBtn.addEventListener('click',playFinal);
 
   tab.addEventListener('click',event=>{
     event.preventDefault();
@@ -446,7 +488,8 @@
     stopTick();
     releaseWakeLock();
     if(quickTapTimer)clearTimeout(quickTapTimer);
-    if(beepUrl)URL.revokeObjectURL(beepUrl);
+    if(warningBeepUrl)URL.revokeObjectURL(warningBeepUrl);
+    if(finalBeepUrl)URL.revokeObjectURL(finalBeepUrl);
   });
 
   render();
