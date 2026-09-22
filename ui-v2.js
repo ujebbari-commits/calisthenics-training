@@ -62,7 +62,7 @@
         ['heavy_bench_press','main'],['chest_press','secondary'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'PULL',title:'Pull · 背中 / 二頭 / 握力',desc:'引く筋肉と懸垂の土台を鍛える日。',items:[
-        ['lat_pulldown','main'],['seated_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
+        ['lat_pulldown','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
       ]},
       {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
         ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core'],['ab_roller','core']
