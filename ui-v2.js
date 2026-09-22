@@ -402,7 +402,7 @@
       '<span class="exercise-mode-chip">Mode '+s.mode+'</span>'+
       '<span class="exercise-weight-line">重量Lv '+s.level+'/10 · '+current+'/'+max+'</span>'+
       '<span class="level-progress-bar"><i style="width:'+s.pct+'%"></i></span>'+
-      '<span class="level-progress-scale"><b>Lv1</b><b>Lv5 '+mid+'</b><b>Lv10</b></span>'+
+      '<span class="level-progress-scale"><b>Lv1 '+(s.milestones?.[0]!=null?formatNumber(s.milestones[0])+'kg':'—')+'</b><b>Lv5 '+mid+'</b><b>Lv10 '+max+'</b></span>'+
     '</span>';
   }
   function exerciseLevelBadge(def){return weightProgressHtml(def);}
