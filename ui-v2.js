@@ -246,8 +246,22 @@
     if(existing){
       existing.exerciseAdjustments=exerciseAdjustments;
       existing.completedVia='today-inline';
+      existing.programMode=Number(state.programMode||4);
+      existing.menuTitle=day.title;
+      existing.menuCode=day.code;
     }else{
-      state.history.push({iso:selectedDateToIso(input.value),key:menuKey,level:state.level,results:[],notes:'',exerciseAdjustments,completedVia:'today-inline'});
+      state.history.push({
+        iso:selectedDateToIso(input.value),
+        key:menuKey,
+        level:state.level,
+        programMode:Number(state.programMode||4),
+        menuTitle:day.title,
+        menuCode:day.code,
+        results:[],
+        notes:'',
+        exerciseAdjustments,
+        completedVia:'today-inline'
+      });
     }
     state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
     save();
