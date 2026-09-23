@@ -8,6 +8,7 @@
   const WEIGHT_GOAL_KEY='training.weightGoals.v1';
   const WEIGHT_ACHIEVEMENT_KEY='training.weightAchievements.v1';
   const EXERCISE_MODE_KEY='training.exerciseModes.v1';
+  const TODAY_ADJUSTMENTS_KEY='training.todayAdjustments.v1';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
@@ -45,33 +46,33 @@
   const catalogPrograms={
     4:[
       {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'上半身の基本種目をまとめる日。',items:[
-        ['heavy_bench_press','main'],['chest_press','secondary'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['lateral_raise','accessory'],['biceps_machine','accessory'],['triceps_machine','accessory']
+        ['heavy_bench_press','main'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['chest_press','secondary'],['biceps_machine','accessory'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['ab_crunch','core'],['ab_roller','core'],['rotary_torso','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['rotary_torso','core'],['hip_abductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
       ]},
       {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['chest_press','secondary'],['lat_pulldown','secondary']
+        ['pec_fly','main'],['chest_supported_row','main'],['chest_press','secondary'],['high_row_machine','secondary'],['rear_delt','accessory'],['lat_pulldown','secondary']
       ]},
       {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['ab_crunch','core'],['ab_roller','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['back_extension','accessory'],['hip_adductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
       ]}
     ],
     5:[
-      {key:'A',code:'PUSH',title:'Push · 胸 / 肩 / 三頭',desc:'押す筋肉を集中して鍛える日。',items:[
-        ['heavy_bench_press','main'],['chest_press','secondary'],['shoulder_press','main'],['pec_fly','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+      {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'胸・背中・肩を交互に進め、同じ部位の連続疲労を抑える日。',items:[
+        ['heavy_bench_press','main'],['lat_pulldown','main'],['shoulder_press','main'],['high_row_machine','secondary'],['triceps_machine','accessory'],['dead_hang','accessory']
       ]},
-      {key:'B',code:'PULL',title:'Pull · 背中 / 二頭 / 握力',desc:'引く筋肉と懸垂の土台を鍛える日。',items:[
-        ['lat_pulldown','main'],['chest_supported_row','main'],['high_row_machine','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['dead_hang','accessory']
+      {key:'B',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別種目で交互に刺激し、後半までトレーニング品質を保つ日。',items:[
+        ['chest_press','secondary'],['chest_supported_row','main'],['pec_fly','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['lateral_raise','accessory']
       ]},
       {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_abductor','accessory'],['hip_adductor','accessory'],['ab_crunch','core'],['ab_roller','core']
+        ['seated_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['hip_abductor','accessory'],['ab_roller','core'],['hip_adductor','accessory'],['leg_press_calf_raise','accessory']
       ]},
       {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['lat_pulldown','secondary'],['shoulder_press','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+        ['pec_fly','main'],['chest_supported_row','main'],['shoulder_press','secondary'],['lat_pulldown','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
       ]},
       {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['leg_extension','secondary'],['leg_press_calf_raise','accessory'],['hip_adductor','accessory'],['back_extension','accessory'],['rotary_torso','core'],['ab_crunch','core'],['ab_roller','core']
+        ['linear_leg_press','main'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_extension','secondary'],['back_extension','accessory'],['ab_crunch','core'],['hip_adductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
       ]}
     ]
   };
@@ -123,6 +124,7 @@
   const weightGoals=read(WEIGHT_GOAL_KEY,{});
   const weightAchievements=read(WEIGHT_ACHIEVEMENT_KEY,{});
   const exerciseModes=read(EXERCISE_MODE_KEY,{});
+  const todayAdjustments=read(TODAY_ADJUSTMENTS_KEY,{});
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
@@ -134,6 +136,7 @@
   const saveWeightGoals=()=>localStorage.setItem(WEIGHT_GOAL_KEY,JSON.stringify(weightGoals));
   const saveWeightAchievements=()=>localStorage.setItem(WEIGHT_ACHIEVEMENT_KEY,JSON.stringify(weightAchievements));
   const saveExerciseModes=()=>localStorage.setItem(EXERCISE_MODE_KEY,JSON.stringify(exerciseModes));
+  const saveTodayAdjustments=()=>localStorage.setItem(TODAY_ADJUSTMENTS_KEY,JSON.stringify(todayAdjustments));
   saveTargets();
 
   const automaticRecommendedKey=typeof recommendedKey==='function'?recommendedKey:null;
@@ -168,6 +171,110 @@
   }
   function badge(e){return '<span class="muscle-badge">'+icon(e.muscle)+'<span>'+esc(e.label)+'</span></span>'}
 
+  function localDateValue(date=new Date()){
+    const shifted=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+    return shifted.toISOString().slice(0,10);
+  }
+  function selectedDateToIso(value){
+    const parts=String(value||'').split('-').map(Number);
+    if(parts.length!==3||parts.some(x=>!Number.isFinite(x)))return new Date().toISOString();
+    return new Date(parts[0],parts[1]-1,parts[2],12,0,0,0).toISOString();
+  }
+  function adjustmentBucketKey(menuKey=recommendedKey()){
+    return String(state.programMode||4)+':'+menuKey;
+  }
+  function menuAdjustments(menuKey=recommendedKey()){
+    const key=adjustmentBucketKey(menuKey);
+    if(!todayAdjustments[key]||typeof todayAdjustments[key]!=='object')todayAdjustments[key]={};
+    return todayAdjustments[key];
+  }
+  function replacementOptionsHtml(originalId,day){
+    const original=exerciseById(originalId);
+    if(!original)return '<option value="">代替なし</option>';
+    const adjustments=menuAdjustments(day.key);
+    const planned=new Set(day.items.map(([id])=>id));
+    const used=new Set(Object.entries(adjustments).filter(([id,a])=>id!==originalId&&a?.replacementId).map(([,a])=>a.replacementId));
+    const candidates=exercises.filter(e=>e.id!==originalId&&!planned.has(e.id)&&!used.has(e.id));
+    const same=candidates.filter(e=>e.muscle===original.muscle);
+    const other=candidates.filter(e=>e.muscle!==original.muscle);
+    const options=list=>list.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+' · '+esc(e.label)+'</option>').join('');
+    return '<option value="">代替なし</option>'+
+      (same.length?'<optgroup label="同じ部位">'+options(same)+'</optgroup>':'')+
+      (other.length?'<optgroup label="その他の部位">'+options(other)+'</optgroup>':'');
+  }
+  function replacementCardHtml(replacementId){
+    const e=exerciseById(replacementId);
+    if(!e)return '';
+    const t=targets[e.id];
+    const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
+    return '<div class="today-replacement-wrap"><p class="today-replacement-label">代替種目</p>'+
+      '<article class="simple-exercise today-replacement-card" data-exercise-id="'+e.id+'">'+
+        '<div class="simple-exercise-summary today-replacement-summary">'+
+          '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
+          '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
+        '</div>'+exerciseEditorHtml(e,t)+'</article></div>';
+  }
+  function completionRecord(dateValue,menuKey){
+    return state.history.find(h=>h.key===menuKey&&localDateValue(new Date(h.iso))===dateValue);
+  }
+  function renderTodayCompletionState(){
+    const input=document.querySelector('#todayCompleteDate');
+    const button=document.querySelector('#todayCompleteBtn');
+    const status=document.querySelector('#todayCompleteStatus');
+    if(!input||!button)return;
+    if(!input.value)input.value=localDateValue();
+    input.max=localDateValue();
+    const existing=completionRecord(input.value,recommendedKey());
+    button.textContent=existing?'完了記録を更新':'完了済みにする';
+    if(status)status.textContent=existing?'この日付・メニューは記録済みです。':'';
+  }
+  function completeTodayWorkoutInline(){
+    const input=document.querySelector('#todayCompleteDate');
+    if(!input?.value)return;
+    const menuKey=recommendedKey();
+    const day=activeCatalogProgram().find(d=>d.key===menuKey);
+    if(!day)return;
+    const adjustments=menuAdjustments(menuKey);
+    const exerciseAdjustments=day.items.flatMap(([id])=>{
+      const a=adjustments[id];
+      if(!a?.skipped)return [];
+      const original=exerciseById(id);
+      const replacement=exerciseById(a.replacementId);
+      return [{originalExerciseId:id,originalExerciseName:original?.name||id,status:'skipped',replacementExerciseId:replacement?.id||null,replacementExerciseName:replacement?.name||null}];
+    });
+    const existing=completionRecord(input.value,menuKey);
+    if(existing){
+      existing.exerciseAdjustments=exerciseAdjustments;
+      existing.completedVia='today-inline';
+    }else{
+      state.history.push({iso:selectedDateToIso(input.value),key:menuKey,level:state.level,results:[],notes:'',exerciseAdjustments,completedVia:'today-inline'});
+    }
+    state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
+    save();
+    delete todayAdjustments[adjustmentBucketKey(menuKey)];
+    saveTodayAdjustments();
+    ui.todayMenuKey=null;
+    ui.openTodayExercise=null;
+    saveUi();
+    if(typeof renderAll==='function')renderAll();
+    renderCatalogProgram();
+    renderTodayMenuSelector();
+    input.value=localDateValue();
+    renderTodayWorkoutInline();
+    showToast(existing?'完了記録を更新しました':'メニューを完了済みにしました');
+  }
+  function bindTodayCompletionControls(card){
+    const date=card.querySelector('#todayCompleteDate');
+    const button=card.querySelector('#todayCompleteBtn');
+    if(date){
+      date.value=localDateValue();
+      date.max=localDateValue();
+      date.addEventListener('change',renderTodayCompletionState);
+    }
+    if(button)button.addEventListener('click',completeTodayWorkoutInline);
+    renderTodayCompletionState();
+  }
+
   function setupSections(){
     const shell=document.querySelector('.shell');
     const header=document.querySelector('.topbar');
@@ -186,10 +293,11 @@
     const todayInlineCard=document.createElement('section');
     todayInlineCard.className='card today-inline-workout-card';
     todayInlineCard.dataset.appSection='today';
-    todayInlineCard.innerHTML='<div class="section-head"><div><p class="eyebrow">TODAY\'S WORKOUT</p><h2 id="todayInlineTitle">今日のメニュー</h2><p id="todayInlineDesc" class="muted"></p></div></div><div id="todayInlineExerciseList" class="today-inline-exercise-list"></div>';
+    todayInlineCard.innerHTML='<div class="section-head today-workout-head"><div><p class="eyebrow">TODAY\'S WORKOUT</p><h2 id="todayInlineTitle">今日のメニュー</h2><p id="todayInlineDesc" class="muted"></p></div><div class="today-completion-controls"><label><span>日付</span><input id="todayCompleteDate" type="date"></label><button type="button" id="todayCompleteBtn" class="primary">完了済みにする</button><small id="todayCompleteStatus"></small></div></div><div id="todayInlineExerciseList" class="today-inline-exercise-list"></div>';
     if(stats&&stats.parentNode)stats.insertAdjacentElement('afterend',todayInlineCard);
     else if(hero&&hero.parentNode)hero.insertAdjacentElement('afterend',todayInlineCard);
     else shell.appendChild(todayInlineCard);
+    bindTodayCompletionControls(todayInlineCard);
     if(summary)summary.classList.add('legacy-training-level-hidden');
     document.querySelector('#heroLevel')?.classList.add('legacy-training-level-hidden');
     document.querySelector('#heroPhase')?.classList.add('legacy-training-level-hidden');
@@ -349,6 +457,7 @@
       exercises:exerciseSnapshot,
       exerciseHistory,
       sessionHistory:Array.isArray(state.history)?state.history:[],
+      pendingTodayAdjustments:todayAdjustments,
       weightGoalOverrides:weightGoals,
       exerciseModes
     };
@@ -629,23 +738,53 @@
     if(!root||!title||!desc)return;
     const key=recommendedKey();
     const day=activeCatalogProgram().find(d=>d.key===key);
-    if(!day){root.innerHTML='<div class="empty">メニューがありません。</div>';return;}
+    if(!day){
+      root.innerHTML='<div class="empty">メニューがありません。</div>';
+      renderTodayCompletionState();
+      return;
+    }
     title.textContent=day.title;
     desc.textContent=day.desc;
+    const adjustments=menuAdjustments(key);
 
     root.innerHTML=day.items.map(([id])=>{
       const e=exerciseById(id);if(!e)return '';
       const t=targets[id];
-      const open=ui.openTodayExercise===id;
+      const adjustment=adjustments[id]||{};
+      const skipped=!!adjustment.skipped;
+      const open=!skipped&&ui.openTodayExercise===id;
       const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
-      return '<article class="simple-exercise today-program-exercise-card '+(open?'open':'')+'" data-exercise-id="'+id+'">'+
-        '<button type="button" class="simple-exercise-summary today-program-exercise-summary">'+
+      const replacementSelect=skipped?'<div class="today-skip-panel"><label><span>代替種目</span><select class="today-replacement-select" data-original-id="'+id+'">'+replacementOptionsHtml(id,day)+'</select></label><small>痛みがある部位を避け、問題なく行える種目を選んでください。</small></div>':'';
+      return '<article class="simple-exercise today-program-exercise-card '+(open?'open ':'')+(skipped?'skipped':'')+'" data-exercise-id="'+id+'">'+
+        '<button type="button" class="simple-exercise-summary today-program-exercise-summary" '+(skipped?'disabled':'')+'>'+
           '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
-          '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
+          '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span><span class="fold-indicator">'+(skipped?'SKIP':(open?'▲':'▼'))+'</span></div>'+
         '</button>'+
+        '<div class="today-exercise-actions"><button type="button" class="secondary today-skip-btn" data-skip-id="'+id+'">'+(skipped?'スキップ解除':'スキップ')+'</button></div>'+
+        replacementSelect+
+        (skipped&&adjustment.replacementId?replacementCardHtml(adjustment.replacementId):'')+
         (open?exerciseEditorHtml(e,t):'')+
       '</article>';
     }).join('');
+
+    root.querySelectorAll('.today-replacement-select').forEach(select=>{
+      const originalId=select.dataset.originalId;
+      select.value=adjustments[originalId]?.replacementId||'';
+      select.addEventListener('change',()=>{
+        adjustments[originalId]={skipped:true,replacementId:select.value||''};
+        saveTodayAdjustments();
+        renderTodayWorkoutInline();
+      });
+    });
+    root.querySelectorAll('.today-skip-btn').forEach(button=>button.addEventListener('click',()=>{
+      const id=button.dataset.skipId;
+      if(adjustments[id]?.skipped)delete adjustments[id];
+      else adjustments[id]={skipped:true,replacementId:''};
+      if(ui.openTodayExercise===id)ui.openTodayExercise=null;
+      saveUi();
+      saveTodayAdjustments();
+      renderTodayWorkoutInline();
+    }));
 
     bindExerciseCardInteractions(root,()=>{
       renderTodayWorkoutInline();
@@ -654,14 +793,14 @@
       renderWeightGoals();
       renderTrainingModes();
     });
-    root.querySelectorAll('.today-program-exercise-summary').forEach(btn=>btn.onclick=()=>{
-      const id=btn.closest('.simple-exercise').dataset.exerciseId;
+    root.querySelectorAll('.today-program-exercise-summary:not(:disabled)').forEach(btn=>btn.onclick=()=>{
+      const id=btn.closest('.today-program-exercise-card').dataset.exerciseId;
       ui.openTodayExercise=ui.openTodayExercise===id?null:id;
       saveUi();
       renderTodayWorkoutInline();
     });
+    renderTodayCompletionState();
   }
-
   function renderCatalogProgram(){
     const title=document.querySelector('#catalogProgramTitle');
     const grid=document.querySelector('#catalogProgramGrid');
@@ -951,8 +1090,8 @@
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values>span:not(.exercise-weight-progress){border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}.exercise-values .exercise-weight-level{font-weight:900}.exercise-values .exercise-weight-level.muted-level{color:var(--muted);border-color:var(--line);font-weight:700}.fold-indicator{min-width:28px;text-align:center}
     .simple-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 13px 13px}.simple-editor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:2px}.save-record-status{margin-right:auto;color:var(--accent);font-size:.78rem}.save-record-status.error{color:var(--danger)}.simple-field,.simple-static{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.simple-field>div{display:flex;align-items:center;gap:6px}.simple-field input{width:100%;font-weight:800}.simple-field em{font-style:normal}.simple-static strong{color:var(--text);font-size:1rem}
     .weight-achievement{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:20px}.weight-achievement[hidden]{display:none!important}.achievement-card{position:relative;z-index:2;width:min(420px,92vw);text-align:center;background:var(--surface);border:1px solid var(--accent);border-radius:22px;padding:28px 22px;box-shadow:0 20px 80px rgba(0,0,0,.45);animation:achievementPop .55s cubic-bezier(.2,.9,.2,1.25)}.achievement-level{font-size:3rem;font-weight:950;color:var(--accent);line-height:1;margin:8px 0}.achievement-card h2{margin:8px 0}.achievement-detail{color:var(--muted)}.achievement-close{min-width:120px;margin-top:10px}.achievement-burst{position:absolute;inset:50% auto auto 50%;width:1px;height:1px;z-index:1}.achievement-burst i{position:absolute;width:8px;height:8px;border-radius:2px;background:var(--accent);transform:rotate(calc(var(--i)*20deg)) translateY(0);opacity:0}.weight-achievement.play .achievement-burst i{animation:achievementBurst .9s ease-out forwards;animation-delay:calc(var(--i)*12ms)}@keyframes achievementPop{0%{transform:scale(.65);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes achievementBurst{0%{opacity:1;transform:rotate(calc(var(--i)*20deg)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(calc(var(--i)*20deg)) translateY(calc(-1 * var(--r) * 5)) scale(.4)}}
-    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-card{padding:12px!important}.catalog-program-card>.section-head{padding:2px 4px 0}.catalog-program-grid{display:grid;gap:12px;width:100%;max-width:none}.catalog-program-grid>.catalog-day{width:100%;max-width:none;box-sizing:border-box;justify-self:stretch}.catalog-day{padding:0!important;overflow:hidden}.catalog-day-toggle{width:100%;box-sizing:border-box;border:0;background:transparent;color:var(--text);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}.catalog-day-toggle:hover{background:var(--surface3)}.catalog-day-head{min-width:0}.day-fold-indicator{flex:0 0 auto;color:var(--accent);font-weight:900}.catalog-day.open{border-color:var(--accent)}.catalog-day-exercises{padding:0 8px 8px!important;box-sizing:border-box}.catalog-program-exercise-card{width:100%;max-width:none;box-sizing:border-box}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px;width:100%;max-width:none;box-sizing:border-box}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.today-inline-workout-card{margin-top:0}.today-inline-exercise-list{display:grid;gap:7px}.today-program-exercise-card{width:100%;max-width:none;background:var(--surface)}.today-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.today-menu-chooser{width:100%}.today-menu-chooser select{width:100%}.settings-share-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px}.settings-share-box strong{font-size:1.02rem}.settings-share-box p{margin:4px 0 0;font-size:.8rem}.settings-share-status{grid-column:1/-1;color:var(--accent)!important;min-height:1.2em}.settings-share-box .primary{white-space:nowrap}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
-    @media(max-width:700px){.catalog-program-card{padding:8px!important}.catalog-program-card>.section-head{padding:4px}.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}.settings-share-box{grid-template-columns:1fr}.settings-share-box .primary{width:100%}}
+    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-card{padding:12px!important}.catalog-program-card>.section-head{padding:2px 4px 0}.catalog-program-grid{display:grid;gap:12px;width:100%;max-width:none}.catalog-program-grid>.catalog-day{width:100%;max-width:none;box-sizing:border-box;justify-self:stretch}.catalog-day{padding:0!important;overflow:hidden}.catalog-day-toggle{width:100%;box-sizing:border-box;border:0;background:transparent;color:var(--text);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}.catalog-day-toggle:hover{background:var(--surface3)}.catalog-day-head{min-width:0}.day-fold-indicator{flex:0 0 auto;color:var(--accent);font-weight:900}.catalog-day.open{border-color:var(--accent)}.catalog-day-exercises{padding:0 8px 8px!important;box-sizing:border-box}.catalog-program-exercise-card{width:100%;max-width:none;box-sizing:border-box}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px;width:100%;max-width:none;box-sizing:border-box}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.today-workout-head{align-items:flex-start}.today-completion-controls{display:grid;grid-template-columns:auto auto;gap:8px;align-items:end}.today-completion-controls label{display:grid;gap:4px;color:var(--muted);font-size:.72rem}.today-completion-controls input{min-width:145px}.today-completion-controls small{grid-column:1/-1;min-height:1em;color:var(--accent);text-align:right}.today-inline-workout-card{margin-top:0}.today-inline-exercise-list{display:grid;gap:7px}.today-program-exercise-card{width:100%;max-width:none;background:var(--surface)}.today-program-exercise-card.skipped{opacity:.78;border-style:dashed}.today-program-exercise-card.skipped>.today-program-exercise-summary{cursor:default}.today-exercise-actions{display:flex;justify-content:flex-end;padding:0 11px 9px}.today-exercise-actions button{padding:7px 11px;font-size:.76rem}.today-skip-panel{display:grid;gap:5px;margin:0 11px 10px;padding:10px;border:1px solid var(--line);background:var(--surface3);border-radius:10px}.today-skip-panel label{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.today-skip-panel select{width:100%}.today-skip-panel small{color:var(--muted);font-size:.7rem}.today-replacement-wrap{margin:0 11px 11px}.today-replacement-label{margin:0 0 5px;color:var(--accent);font-size:.72rem;font-weight:900}.today-replacement-card{background:var(--surface)!important}.today-replacement-summary{cursor:default!important}.today-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.today-menu-chooser{width:100%}.today-menu-chooser select{width:100%}.settings-share-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px}.settings-share-box strong{font-size:1.02rem}.settings-share-box p{margin:4px 0 0;font-size:.8rem}.settings-share-status{grid-column:1/-1;color:var(--accent)!important;min-height:1.2em}.settings-share-box .primary{white-space:nowrap}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
+    @media(max-width:700px){.today-workout-head{flex-direction:column}.today-completion-controls{width:100%;grid-template-columns:minmax(0,1fr) auto}.today-completion-controls input{width:100%;min-width:0}.catalog-program-card{padding:8px!important}.catalog-program-card>.section-head{padding:4px}.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}.settings-share-box{grid-template-columns:1fr}.settings-share-box .primary{width:100%}}
   `;
   document.head.appendChild(style);
 
