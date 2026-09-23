@@ -222,8 +222,14 @@ function renderHistory(){
   const root=document.querySelector('#history');
   if(!state.history.length){root.innerHTML='<div class="empty">まだ記録はありません。</div>';return;}
   root.innerHTML=[...state.history].reverse().slice(0,30).map(h=>{
-    const w=templates[h.key];const results=(h.results||[]).filter(r=>Number(r.weight)>0||Number(r.reps)>0||Number(r.best)>0);
-    return `<div class="history-item"><div>${new Date(h.iso).toLocaleDateString('ja-JP',{month:'short',day:'numeric',weekday:'short'})}</div><div><strong>${w?.title||h.key}${h.level?` · Lv${h.level}`:''}</strong><p>${results.length?`${results.length}種目をベスト記録`:''}${h.notes?`${results.length?' · ':''}${esc(h.notes)}`:''}</p></div><span class="pill">${w?.code||''}</span></div>`;
+    const w=templates[h.key];const historyTitle=h.menuTitle||w?.title||h.key;const historyCode=h.menuCode||w?.code||'';const results=(h.results||[]).filter(r=>Number(r.weight)>0||Number(r.reps)>0||Number(r.best)>0);
+    const adjustments=(h.exerciseAdjustments||[]).filter(x=>x?.status==='skipped');
+    const skipText=adjustments.length?'スキップ: '+adjustments.map(x=>x.originalExerciseName+(x.replacementExerciseName?' → '+x.replacementExerciseName:'')).join(' / '):'';
+    const details=[];
+    if(results.length)details.push(results.length+'種目をベスト記録');
+    if(h.notes)details.push(esc(h.notes));
+    if(skipText)details.push(esc(skipText));
+    return `<div class="history-item"><div>${new Date(h.iso).toLocaleDateString('ja-JP',{month:'short',day:'numeric',weekday:'short'})}</div><div><strong>${historyTitle}${h.level?` · Lv${h.level}`:''}</strong><p>${details.join(' · ')}</p></div><span class="pill">${historyCode}</span></div>`;
   }).join('');
 }
 
