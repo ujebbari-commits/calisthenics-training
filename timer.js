@@ -191,7 +191,7 @@
   style.textContent=`
     .topbar-actions{display:flex;gap:8px;align-items:center}
     .quick-timer-btn{touch-action:manipulation;position:relative}
-    .quick-timer-btn::after{content:'30/60';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:.52rem;font-weight:850;color:var(--muted);white-space:nowrap;pointer-events:none}
+    .quick-timer-btn::after{content:'35/65';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:.52rem;font-weight:850;color:var(--muted);white-space:nowrap;pointer-events:none}
     .timer-card{max-width:680px;width:100%;justify-self:center}
     .timer-card .section-head{margin-bottom:2px}
     .timer-display{font-size:clamp(4rem,16vw,7rem);font-weight:950;letter-spacing:.03em;line-height:1;text-align:center;padding:26px 8px;color:var(--accent);font-variant-numeric:tabular-nums}
@@ -277,8 +277,8 @@
   const quickBtn=document.createElement('button');
   quickBtn.type='button';
   quickBtn.className='icon-btn quick-timer-btn';
-  quickBtn.setAttribute('aria-label','タイマー。1タップで30秒、2連続タップで60秒');
-  quickBtn.title='1タップ: 30秒 / 2タップ: 60秒';
+  quickBtn.setAttribute('aria-label','タイマー。1タップで35秒、2連続タップで65秒');
+  quickBtn.title='1タップ: 35秒 / 2タップ: 65秒';
   quickBtn.textContent='⏱';
   actions.insertBefore(quickBtn,themeBtn);
 
@@ -580,13 +580,13 @@
     if(quickTapTimer){
       clearTimeout(quickTapTimer);
       quickTapTimer=null;
-      quickStart(60);
+      quickStart(65);
       return;
     }
 
     quickTapTimer=setTimeout(()=>{
       quickTapTimer=null;
-      quickStart(30);
+      quickStart(35);
     },280);
   });
 
