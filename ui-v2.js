@@ -40,43 +40,43 @@
     {id:'cross_trainer',goalMetric:30,name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'recumbent_bike',goalMetric:30,name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'upright_bike',goalMetric:30,name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
-    {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'}
+    {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'},
+    {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
   const catalogPrograms={
     4:[
-      {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'上半身の基本種目をまとめる日。',items:[
-        ['heavy_bench_press','main'],['lat_pulldown','main'],['shoulder_press','secondary'],['seated_row','secondary'],['chest_press','secondary'],['biceps_machine','accessory'],['lateral_raise','accessory'],['triceps_machine','accessory']
+      {key:'A',code:'LOWER A',title:'Lower A · 脚 / 体幹 / 跳躍',desc:'脚の基礎筋力と体幹を鍛え、最後まで質を落としにくい順番にした日。',items:[
+        ['vertical_jump','main'],['linear_leg_press','main'],['ab_roller','core'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_press_calf_raise','accessory']
       ]},
-      {key:'B',code:'LOWER A',title:'Lower A · 脚 / 腹',desc:'脚の前後と体幹を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['rotary_torso','core'],['hip_abductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
+      {key:'B',code:'CHEST + BICEPS A',title:'Chest + Biceps A · 胸 / 二頭 / 握力',desc:'胸を優先しつつ、間に二頭・背中・握力を挟んで押す筋肉の連続疲労を抑える日。',items:[
+        ['heavy_bench_press','main'],['biceps_machine','accessory'],['chest_supported_row','secondary'],['dead_hang','accessory'],['pec_fly','secondary'],['lateral_raise','accessory']
       ]},
-      {key:'C',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別のマシンでもう一度刺激する日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['chest_press','secondary'],['high_row_machine','secondary'],['rear_delt','accessory'],['lat_pulldown','secondary']
+      {key:'C',code:'LOWER B',title:'Lower B · 脚 / 体幹 / 跳躍',desc:'別パターンで脚と体幹を鍛え、将来のジャンプ・切り返し動作の土台を作る日。',items:[
+        ['vertical_jump','main'],['seated_leg_press','main'],['ab_crunch','core'],['leg_extension','secondary'],['back_extension','accessory'],['leg_press_calf_raise','accessory']
       ]},
-      {key:'D',code:'LOWER B',title:'Lower B · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度鍛える日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['back_extension','accessory'],['hip_adductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
+      {key:'D',code:'CHEST + BICEPS B',title:'Chest + Biceps B · 胸 / 二頭 / 握力',desc:'胸・二頭・握力を2回目に刺激し、背中も必要量だけ入れて上半身のバランスを保つ日。',items:[
+        ['chest_press','main'],['lat_pulldown','main'],['biceps_machine','accessory'],['dead_hang','accessory'],['pec_fly','secondary'],['rear_delt','accessory']
       ]}
     ],
     5:[
-      {key:'A',code:'UPPER A',title:'Upper A · 胸 / 背中 / 肩 / 腕',desc:'胸・背中・肩を交互に進め、同じ部位の連続疲労を抑える日。',items:[
-        ['heavy_bench_press','main'],['lat_pulldown','main'],['shoulder_press','main'],['high_row_machine','secondary'],['triceps_machine','accessory'],['dead_hang','accessory']
+      {key:'A',code:'LOWER STRENGTH',title:'Lower Strength · 脚 / 体幹 / 跳躍',desc:'脚の基礎筋力を主軸に、ジャンプと体幹をフレッシュな状態で鍛える日。',items:[
+        ['vertical_jump','main'],['linear_leg_press','main'],['ab_roller','core'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_press_calf_raise','accessory']
       ]},
-      {key:'B',code:'UPPER B',title:'Upper B · 胸 / 背中 / 肩 / 腕',desc:'上半身を別種目で交互に刺激し、後半までトレーニング品質を保つ日。',items:[
-        ['chest_press','secondary'],['chest_supported_row','main'],['pec_fly','secondary'],['rear_delt','accessory'],['biceps_machine','accessory'],['lateral_raise','accessory']
+      {key:'B',code:'CHEST + BICEPS A',title:'Chest + Biceps A · 胸 / 二頭 / 握力',desc:'胸を優先しながら二頭・背中・握力を交互に挟み、前肩と三頭の累積疲労を抑える日。',items:[
+        ['heavy_bench_press','main'],['biceps_machine','accessory'],['chest_supported_row','secondary'],['dead_hang','accessory'],['pec_fly','secondary'],['lateral_raise','accessory']
       ]},
-      {key:'C',code:'LEGS + ABS',title:'Legs · 脚 / 臀部 / 腹',desc:'下半身全体と腹筋を鍛える日。',items:[
-        ['seated_leg_press','main'],['seated_leg_curl','main'],['ab_crunch','core'],['leg_extension','secondary'],['hip_abductor','accessory'],['ab_roller','core'],['hip_adductor','accessory'],['leg_press_calf_raise','accessory']
+      {key:'C',code:'ATHLETIC BASE',title:'Athletic Base · 体幹 / 股関節 / 有酸素',desc:'上半身を休ませながら、バスケ・バレー復帰に向けた体幹・股関節・基礎持久力を鍛える軽めの日。',items:[
+        ['treadmill','main'],['ab_crunch','core'],['hip_abductor','accessory'],['back_extension','accessory'],['hip_adductor','accessory'],['rotary_torso','core']
       ]},
-      {key:'D',code:'UPPER',title:'Upper · 上半身総合',desc:'上半身を2回目の刺激で伸ばす日。',items:[
-        ['pec_fly','main'],['chest_supported_row','main'],['shoulder_press','secondary'],['lat_pulldown','secondary'],['lateral_raise','accessory'],['triceps_machine','accessory']
+      {key:'D',code:'LOWER POWER',title:'Lower Power · 脚 / 体幹 / 跳躍',desc:'跳躍の質を先に確保し、その後に脚の筋力と体幹を鍛える日。',items:[
+        ['vertical_jump','main'],['seated_leg_press','main'],['ab_roller','core'],['leg_extension','secondary'],['seated_leg_curl','main'],['leg_press_calf_raise','accessory']
       ]},
-      {key:'E',code:'LOWER + ABS',title:'Lower · 脚 / 臀部 / 腹',desc:'下半身を別パターンでもう一度刺激する日。',items:[
-        ['linear_leg_press','main'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_extension','secondary'],['back_extension','accessory'],['ab_crunch','core'],['hip_adductor','accessory'],['ab_roller','core'],['leg_press_calf_raise','accessory']
+      {key:'E',code:'CHEST + BICEPS B',title:'Chest + Biceps B · 胸 / 二頭 / 握力',desc:'上半身の2回目。胸・二頭・握力を優先し、背中と肩後部を必要量だけ入れる日。',items:[
+        ['chest_press','main'],['lat_pulldown','main'],['biceps_machine','accessory'],['dead_hang','accessory'],['pec_fly','secondary'],['rear_delt','accessory']
       ]}
     ]
   };
-
   function exerciseById(id){return exercises.find(e=>e.id===id)}
   function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
   const exercisePartFilters=[
