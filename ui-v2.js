@@ -11,6 +11,7 @@
   const TODAY_ADJUSTMENTS_KEY='training.todayAdjustments.v1';
   const BUFFET_DRAFTS_KEY='training.strengthBuffetDrafts.v1';
   const PROGRAM_PREF_VERSION_KEY='training.strengthBuffetProgramVersion';
+  const FLEX_PLAN_PREF_KEY='training.flexStrengthPlan.v1';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
@@ -46,27 +47,45 @@
     {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
-  const STRENGTH_BUFFET={
-    dailyCount:6,
-    quotas:{
-      5:{
-        heavy_bench_press:3,linear_leg_press:2,seated_leg_press:1,seated_leg_curl:2,leg_extension:1,leg_press_calf_raise:2,
-        lat_pulldown:2,chest_supported_row:2,biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,
-        rotary_torso:1,back_extension:1,lateral_raise:1,rear_delt:1,vertical_jump:2,hip_abductor:1
-      },
-      4:{
-        heavy_bench_press:3,linear_leg_press:2,seated_leg_curl:2,leg_press_calf_raise:1,lat_pulldown:2,chest_supported_row:2,
-        biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,rotary_torso:1,back_extension:1,lateral_raise:1,vertical_jump:1
-      }
+  const FLEX_STRENGTH_PLAN={
+    name:'Flex Strength Plan',
+    defaultDailyCount:6,
+    defaultDaysPerWeek:5,
+    benchWeekly:3,
+    baseQuotas:{
+      heavy_bench_press:3,
+      linear_leg_press:2,
+      seated_leg_press:1,
+      seated_leg_curl:2,
+      leg_extension:1,
+      leg_press_calf_raise:2,
+      lat_pulldown:2,
+      chest_supported_row:2,
+      biceps_machine:2,
+      dead_hang:2,
+      ab_crunch:2,
+      ab_roller:2,
+      rotary_torso:1,
+      back_extension:1,
+      lateral_raise:1,
+      rear_delt:1,
+      pec_fly:1,
+      chest_press:1,
+      shoulder_press:1
     }
   };
-  const makeBuffetSlots=count=>Array.from({length:count},(_,i)=>({
-    key:String.fromCharCode(65+i),code:'BUFFET '+(i+1),title:'Strength Buffet',
-    desc:'体調を見て週の残り枠から'+STRENGTH_BUFFET.dailyCount+'種目を選ぶ。',items:[]
-  }));
-  const catalogPrograms={4:makeBuffetSlots(4),5:makeBuffetSlots(5)};
+  function makeFlexSlots(count){
+    return Array.from({length:count},(_,i)=>({
+      key:String.fromCharCode(65+i),
+      code:'FLEX '+(i+1),
+      title:FLEX_STRENGTH_PLAN.name,
+      desc:'体調を見て週間の残り枠から種目を選ぶ筋力・筋肥大プラン。',
+      items:[]
+    }));
+  }
+
   function exerciseById(id){return exercises.find(e=>e.id===id)}
-  function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
+  function activeCatalogProgram(){return makeFlexSlots(flexPlanPrefs.daysPerWeek)}
   const exercisePartFilters=[
     ['all','すべて'],
     ['chest','胸'],
@@ -87,6 +106,7 @@
   function applyCatalogTemplates(){
     if(typeof templates==='undefined')return;
     const defs=activeCatalogProgram();
+    ['A','B','C','D','E','F','G'].forEach(k=>{if(templates[k])delete templates[k];});
     for(const day of defs){
       templates[day.key]={
         code:day.code,
@@ -98,7 +118,7 @@
         })
       };
     }
-    if(Number(state.programMode)===4 && templates.E) delete templates.E;
+
   }
 
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
@@ -114,6 +134,11 @@
   const exerciseModes=read(EXERCISE_MODE_KEY,{});
   const todayAdjustments=read(TODAY_ADJUSTMENTS_KEY,{});
   const buffetDrafts=read(BUFFET_DRAFTS_KEY,{});
+  const rawFlexPlanPrefs=read(FLEX_PLAN_PREF_KEY,{});
+  const flexPlanPrefs={
+    dailyCount:Math.max(1,Math.min(12,Number(rawFlexPlanPrefs.dailyCount)||FLEX_STRENGTH_PLAN.defaultDailyCount)),
+    daysPerWeek:Math.max(3,Math.min(7,Number(rawFlexPlanPrefs.daysPerWeek)||FLEX_STRENGTH_PLAN.defaultDaysPerWeek))
+  };
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
@@ -127,8 +152,9 @@
   const saveExerciseModes=()=>localStorage.setItem(EXERCISE_MODE_KEY,JSON.stringify(exerciseModes));
   const saveTodayAdjustments=()=>localStorage.setItem(TODAY_ADJUSTMENTS_KEY,JSON.stringify(todayAdjustments));
   const saveBuffetDrafts=()=>localStorage.setItem(BUFFET_DRAFTS_KEY,JSON.stringify(buffetDrafts));
+  const saveFlexPlanPrefs=()=>localStorage.setItem(FLEX_PLAN_PREF_KEY,JSON.stringify(flexPlanPrefs));
   if(Number(localStorage.getItem(PROGRAM_PREF_VERSION_KEY)||0)<1){
-    const quotaIds=new Set([...Object.keys(STRENGTH_BUFFET.quotas[5]),...Object.keys(STRENGTH_BUFFET.quotas[4])]);
+    const quotaIds=new Set(Object.keys(FLEX_STRENGTH_PLAN.baseQuotas));
     quotaIds.forEach(id=>{
       const def=exerciseById(id),target=targets[id];
       if(!def||!target)return;
@@ -174,11 +200,46 @@
   function badge(e){return '<span class="muscle-badge">'+icon(e.muscle)+'<span>'+esc(e.label)+'</span></span>'}
 
   function buffetQuotaMap(){
-    return STRENGTH_BUFFET.quotas[Number(state.programMode)===4?4:5];
+    const totalSlots=flexPlanPrefs.dailyCount*flexPlanPrefs.daysPerWeek;
+    const days=flexPlanPrefs.daysPerWeek;
+    const base=FLEX_STRENGTH_PLAN.baseQuotas;
+    const quotas={};
+    const bench=Math.min(FLEX_STRENGTH_PLAN.benchWeekly,days,totalSlots);
+    quotas.heavy_bench_press=bench;
+    let remaining=Math.max(0,totalSlots-bench);
+    const ids=Object.keys(base).filter(id=>id!=='heavy_bench_press');
+    const weightTotal=ids.reduce((sum,id)=>sum+Number(base[id]||0),0);
+    const fractions=[];
+    let assigned=0;
+    ids.forEach(id=>{
+      const raw=weightTotal>0?remaining*Number(base[id]||0)/weightTotal:0;
+      const q=Math.min(days,Math.floor(raw));
+      quotas[id]=q;
+      assigned+=q;
+      fractions.push({id,fraction:raw-Math.floor(raw),weight:Number(base[id]||0)});
+    });
+    let left=remaining-assigned;
+    const order=fractions.sort((a,b)=>b.fraction-a.fraction||b.weight-a.weight||ids.indexOf(a.id)-ids.indexOf(b.id));
+    while(left>0){
+      let progressed=false;
+      for(const item of order){
+        if(left<=0)break;
+        if((quotas[item.id]||0)>=days)continue;
+        quotas[item.id]=(quotas[item.id]||0)+1;
+        left--;
+        progressed=true;
+      }
+      if(!progressed)break;
+    }
+    return Object.fromEntries(Object.entries(quotas).filter(([,q])=>q>0));
   }
   function buffetPool(){
     return Object.keys(buffetQuotaMap()).map(exerciseById).filter(Boolean);
   }
+  function buffetWeeklyTotal(){
+    return flexPlanPrefs.dailyCount*flexPlanPrefs.daysPerWeek;
+  }
+
   function mondayKey(dateValue){
     const [y,m,d]=String(dateValue||localDateValue()).split('-').map(Number);
     const date=new Date(y,m-1,d,12,0,0,0);
@@ -186,14 +247,17 @@
     date.setDate(date.getDate()-day);
     return localDateValue(date);
   }
+  function isFlexPlanRecord(h){
+    return h?.completedVia==='flex-strength-plan'||h?.completedVia==='strength-buffet';
+  }
   function buffetRecordForDate(dateValue){
-    return state.history.find(h=>h.completedVia==='strength-buffet'&&localDateValue(new Date(h.iso))===dateValue);
+    return state.history.find(h=>isFlexPlanRecord(h)&&localDateValue(new Date(h.iso))===dateValue);
   }
   function buffetCounts(dateValue,excludeRecord=null){
     const week=mondayKey(dateValue);
     const counts={};
     (state.history||[]).forEach(h=>{
-      if(h===excludeRecord||h.completedVia!=='strength-buffet'||mondayKey(localDateValue(new Date(h.iso)))!==week)return;
+      if(h===excludeRecord||!isFlexPlanRecord(h)||mondayKey(localDateValue(new Date(h.iso)))!==week)return;
       (h.buffetExerciseIds||[]).forEach(id=>counts[id]=(counts[id]||0)+1);
     });
     return counts;
@@ -207,6 +271,7 @@
     }else{
       buffetDrafts[key]=buffetDrafts[key].filter(id=>allowed.has(id));
     }
+    if(buffetDrafts[key].length>flexPlanPrefs.dailyCount)buffetDrafts[key]=buffetDrafts[key].slice(0,flexPlanPrefs.dailyCount);
     return buffetDrafts[key];
   }
   function currentBuffetDate(){
@@ -214,7 +279,7 @@
   }
   function buffetSessionKey(dateValue){
     const week=mondayKey(dateValue);
-    const done=(state.history||[]).filter(h=>h.completedVia==='strength-buffet'&&mondayKey(localDateValue(new Date(h.iso)))===week).length;
+    const done=(state.history||[]).filter(h=>isFlexPlanRecord(h)&&mondayKey(localDateValue(new Date(h.iso)))===week).length;
     const slots=activeCatalogProgram();
     return slots[Math.min(done,slots.length-1)]?.key||slots[0]?.key||'A';
   }
@@ -224,9 +289,6 @@
     if(def.id==='vertical_jump')return '5回 × 3セット';
     if(def.id==='dead_hang')return String(t.reps||def.reps)+' × '+String(t.sets||3)+'セット';
     return String(t.reps||'12')+'回 × '+String(t.sets||3)+'セット';
-  }
-  function buffetWeeklyTotal(){
-    return Object.values(buffetQuotaMap()).reduce((a,b)=>a+Number(b||0),0);
   }
 
   function localDateValue(date=new Date()){
@@ -285,16 +347,16 @@
     const existing=completionRecord(input.value);
     const selected=buffetDraft(input.value).length;
     button.textContent=existing?'更新':'完了';
-    button.disabled=selected!==STRENGTH_BUFFET.dailyCount;
-    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+STRENGTH_BUFFET.dailyCount;
+    button.disabled=selected!==flexPlanPrefs.dailyCount;
+    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+flexPlanPrefs.dailyCount;
   }
   function completeTodayWorkoutInline(){
     const input=document.querySelector('#todayCompleteDate');
     if(!input?.value)return;
     const dateValue=input.value;
     const selected=[...new Set(buffetDraft(dateValue))];
-    if(selected.length!==STRENGTH_BUFFET.dailyCount){
-      showToast('1日'+STRENGTH_BUFFET.dailyCount+'種目を選択してください');
+    if(selected.length!==flexPlanPrefs.dailyCount){
+      showToast('1日'+flexPlanPrefs.dailyCount+'種目を選択してください');
       return;
     }
     const quotas=buffetQuotaMap();
@@ -308,8 +370,8 @@
     const sessionKey=existing?.key||buffetSessionKey(dateValue);
     const record={
       iso:selectedDateToIso(dateValue),key:sessionKey,level:state.level,programMode:Number(state.programMode||5),
-      menuTitle:'Strength Buffet',menuCode:'BUFFET',results:existing?.results||[],notes:existing?.notes||'',
-      buffetExerciseIds:selected,completedVia:'strength-buffet'
+      menuTitle:FLEX_STRENGTH_PLAN.name,menuCode:'FLEX',planDays:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,
+      results:existing?.results||[],notes:existing?.notes||'',buffetExerciseIds:selected,completedVia:'flex-strength-plan'
     };
     if(existing)Object.assign(existing,record); else state.history.push(record);
     state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
@@ -321,9 +383,11 @@
     if(typeof renderAll==='function')renderAll();
     renderCatalogProgram();
     renderTrainingModes();
+    renderFlexPlanHeader();
+    renderFlexPlanStats();
     input.value=localDateValue();
     renderTodayWorkoutInline();
-    showToast(existing?'完了記録を更新しました':'Strength Buffetを完了しました');
+    showToast(existing?'完了記録を更新しました':'Flex Strength Planを完了しました');
   }
   function bindTodayCompletionControls(card){
     const date=card.querySelector('#todayCompleteDate');
@@ -335,6 +399,67 @@
     }
     if(button)button.addEventListener('click',completeTodayWorkoutInline);
     renderTodayCompletionState();
+  }
+
+  function renderFlexPlanHeader(){
+    const title=document.querySelector('#todayTitle');
+    const summary=document.querySelector('#todaySummary');
+    const label=document.querySelector('#todayLabel');
+    if(title)title.textContent=FLEX_STRENGTH_PLAN.name;
+    if(summary)summary.textContent='筋力・筋肥大 · 1日'+flexPlanPrefs.dailyCount+'種目 × 週'+flexPlanPrefs.daysPerWeek+'日 · ベンチプレス週3回 5×5';
+    if(label)label.textContent='FLEX STRENGTH · '+buffetWeeklyTotal()+' WEEKLY SLOTS';
+  }
+  function renderFlexPlanStats(){
+    const week=mondayKey(localDateValue());
+    const records=(state.history||[]).filter(h=>isFlexPlanRecord(h)&&mondayKey(localDateValue(new Date(h.iso)))===week);
+    const weekCount=document.querySelector('#weekCount');
+    if(weekCount)weekCount.textContent=records.length+' / '+flexPlanPrefs.daysPerWeek;
+    const weeks=new Set((state.history||[]).filter(isFlexPlanRecord).map(h=>mondayKey(localDateValue(new Date(h.iso)))));
+    let streak=0;
+    const cursor=new Date(week+'T12:00:00');
+    while(weeks.has(localDateValue(cursor))){
+      streak++;
+      cursor.setDate(cursor.getDate()-7);
+    }
+    const streakEl=document.querySelector('#streakCount');
+    if(streakEl)streakEl.textContent=String(streak);
+  }
+  function bindFlexPlanSettings(card){
+    const daily=card.querySelector('#flexPlanDailyCount');
+    const days=card.querySelector('#flexPlanDaysPerWeek');
+    const saveBtn=card.querySelector('#saveFlexPlanSettings');
+    const status=card.querySelector('#flexPlanSettingsStatus');
+    if(!daily||!days||!saveBtn)return;
+    daily.value=String(flexPlanPrefs.dailyCount);
+    days.value=String(flexPlanPrefs.daysPerWeek);
+    saveBtn.onclick=()=>{
+      const nextDaily=Math.round(Number(daily.value));
+      const nextDays=Math.round(Number(days.value));
+      if(!Number.isFinite(nextDaily)||nextDaily<1||nextDaily>12){
+        status.textContent='1日あたりは1〜12種目で入力してください。';
+        return;
+      }
+      if(!Number.isFinite(nextDays)||nextDays<3||nextDays>7){
+        status.textContent='週3〜7日で入力してください（ベンチ週3回のため最低3日）。';
+        return;
+      }
+      flexPlanPrefs.dailyCount=nextDaily;
+      flexPlanPrefs.daysPerWeek=nextDays;
+      saveFlexPlanPrefs();
+      const allowed=new Set(Object.keys(buffetQuotaMap()));
+      Object.keys(buffetDrafts).forEach(key=>{
+        buffetDrafts[key]=(Array.isArray(buffetDrafts[key])?buffetDrafts[key]:[]).filter(id=>allowed.has(id)).slice(0,flexPlanPrefs.dailyCount);
+      });
+      saveBuffetDrafts();
+      applyCatalogTemplates();
+      if(typeof renderAll==='function')renderAll();
+      renderFlexPlanHeader();
+      renderFlexPlanStats();
+      renderTodayWorkoutInline();
+      renderCatalogProgram();
+      renderTrainingModes();
+      status.textContent='保存しました · 1日'+flexPlanPrefs.dailyCount+'種目 × 週'+flexPlanPrefs.daysPerWeek+'日';
+    };
   }
 
   function setupSections(){
@@ -373,7 +498,7 @@
     const catalogProgramCard=document.createElement('section');
     catalogProgramCard.className='card catalog-program-card';
     catalogProgramCard.dataset.appSection='program';
-    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">STRENGTH BUFFET</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
+    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">FLEX STRENGTH PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
     if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
     const exerciseModesCard=document.createElement('section');
     exerciseModesCard.className='card exercise-modes-card';
@@ -400,7 +525,11 @@
     settingsCard.className='card app-settings-card';
     settingsCard.dataset.appSection='settings';
     settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
-      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Strength Buffetの週間枠を共有用JSONにまとめます。</p></div>'+
+      '<div class="flex-plan-settings"><div><strong>Flex Strength Plan</strong><p class="muted">筋力・筋肥大向け。ベンチプレスは週3回5×5、それ以外は原則12×3。週間枠は設定値に合わせて自動配分します。</p></div>'+
+      '<label><span>1日あたりの種目数</span><input id="flexPlanDailyCount" type="number" min="1" max="12" step="1" inputmode="numeric"></label>'+
+      '<label><span>週のトレーニング日数</span><input id="flexPlanDaysPerWeek" type="number" min="3" max="7" step="1" inputmode="numeric"></label>'+
+      '<button type="button" id="saveFlexPlanSettings" class="primary">保存</button><p id="flexPlanSettingsStatus" class="flex-plan-settings-status"></p></div>'+
+      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Flex Strength Planの週間枠を共有用JSONにまとめます。</p></div>'+
       '<button type="button" id="shareTrainingDataBtn" class="primary">ChatGPTに共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
     shell.appendChild(settingsCard);
 
@@ -434,23 +563,15 @@
     renderTodayWorkoutInline();
     renderCatalogProgram();
     renderTrainingModes();
-    const modeSelect=document.querySelector('#programModeSelect');
-    if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{
-      applyCatalogTemplates();
-      const keys=activeCatalogProgram().map(x=>x.key);
-      if(ui.todayMenuKey&&!keys.includes(ui.todayMenuKey))ui.todayMenuKey=null;
-      saveUi();
-      if(typeof renderAll==='function')renderAll();
-      renderTodayMenuSelector();
-      renderTodayWorkoutInline();
-      renderCatalogProgram();
-      renderTrainingModes();
-    },0));
+
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
+    bindFlexPlanSettings(settingsCard);
     const shareBtn=document.querySelector('#shareTrainingDataBtn');
     if(shareBtn)shareBtn.onclick=shareTrainingData;
+    renderFlexPlanHeader();
+    renderFlexPlanStats();
     showTab(ui.tab||'today');
   }
 
@@ -494,11 +615,12 @@
       purpose:'ChatGPTに現在のトレーニングアプリ情報を共有し、今後のメニュー・負荷・進捗相談に利用するためのデータ',
       appState:{
         programMode:Number(state.programMode||4),
-        todayMenuKey:ui.todayMenuKey||null,
+        flexPlan:{name:FLEX_STRENGTH_PLAN.name,daysPerWeek:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount},
+        todayMenuKey:null,
         level:state.level??null,
         unlockedLevel:state.unlockedLevel??null
       },
-      weeklyProgram:{type:'strength-buffet',days:Number(state.programMode||5),dailyExerciseCount:STRENGTH_BUFFET.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
+      weeklyProgram:{type:'flex-strength-plan',goal:'strength-and-hypertrophy',days:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
       currentWeekExerciseCounts:buffetCounts(localDateValue()),
       exercises:exerciseSnapshot,
       exerciseHistory,
@@ -800,9 +922,9 @@
     const existing=buffetRecordForDate(dateValue);
     const counts=buffetCounts(dateValue,existing);
     const quotas=buffetQuotaMap();
-    title.textContent='Strength Buffet · '+STRENGTH_BUFFET.dailyCount+'種目';
+    title.textContent=FLEX_STRENGTH_PLAN.name+' · '+flexPlanPrefs.dailyCount+'種目';
     desc.textContent='体調を見て選択。週の必要回数だけ守れば、いつ実施するかは自由です。ベンチプレスは週3回・5×5、それ以外は原則12×3。';
-    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+STRENGTH_BUFFET.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
+    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+flexPlanPrefs.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
       '<div class="buffet-exercise-grid">'+buffetPool().map(e=>{
         const t=targets[e.id],isSelected=selected.includes(e.id);
         const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
@@ -826,7 +948,7 @@
       const idx=list.indexOf(id);
       if(idx>=0)list.splice(idx,1);
       else{
-        if(list.length>=STRENGTH_BUFFET.dailyCount){showToast('1日は'+STRENGTH_BUFFET.dailyCount+'種目までです');return;}
+        if(list.length>=flexPlanPrefs.dailyCount){showToast('1日は'+flexPlanPrefs.dailyCount+'種目までです');return;}
         const current=buffetCounts(dateValue,existing);
         if((current[id]||0)>=Number(quotas[id]||0)){showToast('この種目は今週の必要回数を達成済みです');return;}
         list.push(id);
@@ -849,9 +971,9 @@
     const total=document.querySelector('#buffetWeeklyTotal');
     if(!title||!grid)return;
     const dateValue=currentBuffetDate(),counts=buffetCounts(dateValue),quotas=buffetQuotaMap();
-    title.textContent='週'+state.programMode+'日 · 1日'+STRENGTH_BUFFET.dailyCount+'種目';
+    title.textContent='週'+flexPlanPrefs.daysPerWeek+'日 · 1日'+flexPlanPrefs.dailyCount+'種目';
     if(total)total.textContent='週 '+buffetWeeklyTotal()+'枠';
-    grid.innerHTML='<div class="buffet-program-note"><strong>ビュッフェ方式</strong><p>その日の体調に合わせて'+STRENGTH_BUFFET.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
+    grid.innerHTML='<div class="buffet-program-note"><strong>Flex方式</strong><p>その日の体調に合わせて'+flexPlanPrefs.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
       '<div class="buffet-quota-grid">'+buffetPool().map(e=>{
         const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
         return '<article class="buffet-quota-card '+(done>=quota?'done':'')+'">'+
@@ -981,7 +1103,7 @@
 
     const panel=document.createElement('div');
     panel.id='exerciseProgressPanel';
-    panel.innerHTML='<div class="section-head progress-head"><div><p class="eyebrow">PROGRESS</p><h2>種目別進捗</h2></div><label class="select-label">種目<select id="exerciseProgressSelect"></select></label></div><div id="exerciseProgressSummary" class="chart-stats"></div><div id="exerciseProgressCurve" class="exercise-progress-curve"></div><div id="exerciseProgressRows" class="exercise-progress-rows"></div>';
+    panel.innerHTML='<div class="section-head progress-head"><div><p class="eyebrow">PROGRESS</p><h2>重量・記録推移</h2><p class="muted progress-note">重量種目は保存したkgを時系列グラフで追跡します。時間種目は時間の推移を表示します。</p></div><label class="select-label">種目<select id="exerciseProgressSelect"></select></label></div><div id="exerciseProgressSummary" class="chart-stats"></div><div id="exerciseProgressCurve" class="exercise-progress-curve"></div><div id="exerciseProgressRows" class="exercise-progress-rows"></div>';
     card.appendChild(panel);
 
     const sel=panel.querySelector('#exerciseProgressSelect');
@@ -1108,9 +1230,9 @@
     .exercise-values{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.exercise-values>span:not(.exercise-weight-progress){border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:.72rem}.exercise-values .exercise-weight-level{font-weight:900}.exercise-values .exercise-weight-level.muted-level{color:var(--muted);border-color:var(--line);font-weight:700}.fold-indicator{min-width:28px;text-align:center}
     .simple-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 13px 13px}.simple-editor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:2px}.save-record-status{margin-right:auto;color:var(--accent);font-size:.78rem}.save-record-status.error{color:var(--danger)}.simple-field,.simple-static{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.simple-field>div{display:flex;align-items:center;gap:6px}.simple-field input{width:100%;font-weight:800}.simple-field em{font-style:normal}.simple-static strong{color:var(--text);font-size:1rem}
     .weight-achievement{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:20px}.weight-achievement[hidden]{display:none!important}.achievement-card{position:relative;z-index:2;width:min(420px,92vw);text-align:center;background:var(--surface);border:1px solid var(--accent);border-radius:22px;padding:28px 22px;box-shadow:0 20px 80px rgba(0,0,0,.45);animation:achievementPop .55s cubic-bezier(.2,.9,.2,1.25)}.achievement-level{font-size:3rem;font-weight:950;color:var(--accent);line-height:1;margin:8px 0}.achievement-card h2{margin:8px 0}.achievement-detail{color:var(--muted)}.achievement-close{min-width:120px;margin-top:10px}.achievement-burst{position:absolute;inset:50% auto auto 50%;width:1px;height:1px;z-index:1}.achievement-burst i{position:absolute;width:8px;height:8px;border-radius:2px;background:var(--accent);transform:rotate(calc(var(--i)*20deg)) translateY(0);opacity:0}.weight-achievement.play .achievement-burst i{animation:achievementBurst .9s ease-out forwards;animation-delay:calc(var(--i)*12ms)}@keyframes achievementPop{0%{transform:scale(.65);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes achievementBurst{0%{opacity:1;transform:rotate(calc(var(--i)*20deg)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(calc(var(--i)*20deg)) translateY(calc(-1 * var(--r) * 5)) scale(.4)}}
-    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-card{padding:12px!important}.catalog-program-card>.section-head{padding:2px 4px 0}.catalog-program-grid{display:grid;gap:12px;width:100%;max-width:none}.catalog-program-grid>.catalog-day{width:100%;max-width:none;box-sizing:border-box;justify-self:stretch}.catalog-day{padding:0!important;overflow:hidden}.catalog-day-toggle{width:100%;box-sizing:border-box;border:0;background:transparent;color:var(--text);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}.catalog-day-toggle:hover{background:var(--surface3)}.catalog-day-head{min-width:0}.day-fold-indicator{flex:0 0 auto;color:var(--accent);font-weight:900}.catalog-day.open{border-color:var(--accent)}.catalog-day-exercises{padding:0 8px 8px!important;box-sizing:border-box}.catalog-program-exercise-card{width:100%;max-width:none;box-sizing:border-box}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px;width:100%;max-width:none;box-sizing:border-box}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.today-workout-head{align-items:flex-start}.today-completion-controls{display:grid;grid-template-columns:150px 150px;gap:8px;align-items:end}.today-completion-controls label,.today-completion-controls button{width:150px}.today-completion-controls label{display:block}.today-completion-controls input,.today-completion-controls button{width:100%;height:42px;box-sizing:border-box}.today-completion-controls small{grid-column:1/-1;min-height:1em;color:var(--accent);text-align:right}.today-inline-workout-card{margin-top:0}.today-inline-exercise-list{display:grid;gap:7px}.today-program-exercise-card{width:100%;max-width:none;background:var(--surface)}.today-program-exercise-card.skipped{opacity:.78;border-style:dashed}.today-program-exercise-card.skipped>.today-program-exercise-summary{cursor:default}.today-exercise-actions{display:flex;justify-content:flex-end;padding:0 11px 9px}.today-exercise-actions button{padding:7px 11px;font-size:.76rem}.today-skip-panel{display:grid;gap:5px;margin:0 11px 10px;padding:10px;border:1px solid var(--line);background:var(--surface3);border-radius:10px}.today-skip-panel label{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.today-skip-panel select{width:100%}.today-skip-panel small{color:var(--muted);font-size:.7rem}.today-replacement-wrap{margin:0 11px 11px}.today-replacement-label{margin:0 0 5px;color:var(--accent);font-size:.72rem;font-weight:900}.today-replacement-card{background:var(--surface)!important}.today-replacement-summary{cursor:default!important}.today-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.today-menu-chooser{width:100%}.today-menu-chooser select{width:100%}.settings-share-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px}.settings-share-box strong{font-size:1.02rem}.settings-share-box p{margin:4px 0 0;font-size:.8rem}.settings-share-status{grid-column:1/-1;color:var(--accent)!important;min-height:1.2em}.settings-share-box .primary{white-space:nowrap}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
+    .weight-goal-intro{margin-top:-4px}.weight-goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.weight-goal-item{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:12px}.weight-goal-item.done{border-color:var(--accent)}.weight-goal-head{display:flex;gap:8px;align-items:center}.weight-level-badge{margin-left:auto;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 8px;font-weight:900;font-size:.75rem}.weight-level-next{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:10px}.weight-level-next span{color:var(--muted);font-size:.72rem}.weight-level-next strong{font-size:.95rem}.weight-level-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:.65rem}.weight-goal-head strong,.weight-goal-head small{display:block}.weight-goal-head small{color:var(--muted);margin-top:2px;font-size:.72rem}.weight-goal-input{display:grid;gap:5px;margin-top:10px;color:var(--muted);font-size:.72rem}.weight-goal-input>div{display:flex;align-items:center;gap:6px}.weight-goal-input input{width:100%;font-weight:800}.weight-goal-input em{font-style:normal}.weight-goal-progress{height:7px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-top:10px}.weight-goal-progress span{display:block;height:100%;background:var(--accent);border-radius:inherit}.weight-goal-status{margin:7px 0 0;color:var(--muted);font-size:.72rem}.weight-goal-item.done .weight-goal-status{color:var(--accent);font-weight:800}.catalog-program-card{padding:12px!important}.catalog-program-card>.section-head{padding:2px 4px 0}.catalog-program-grid{display:grid;gap:12px;width:100%;max-width:none}.catalog-program-grid>.catalog-day{width:100%;max-width:none;box-sizing:border-box;justify-self:stretch}.catalog-day{padding:0!important;overflow:hidden}.catalog-day-toggle{width:100%;box-sizing:border-box;border:0;background:transparent;color:var(--text);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}.catalog-day-toggle:hover{background:var(--surface3)}.catalog-day-head{min-width:0}.day-fold-indicator{flex:0 0 auto;color:var(--accent);font-weight:900}.catalog-day.open{border-color:var(--accent)}.catalog-day-exercises{padding:0 8px 8px!important;box-sizing:border-box}.catalog-program-exercise-card{width:100%;max-width:none;box-sizing:border-box}.catalog-day{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:14px;width:100%;max-width:none;box-sizing:border-box}.catalog-day-head h3{margin:3px 0}.catalog-day-head p{margin:0;color:var(--muted);font-size:.82rem}.catalog-day-exercises{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%}.catalog-program-exercise-card{background:var(--surface)}.catalog-program-exercise-summary{padding:11px}.catalog-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.exercise-weight-progress{display:grid;gap:5px;min-width:190px;align-items:center}.exercise-weight-progress span{border:0!important;padding:0!important}.exercise-mode-chip{justify-self:start;color:var(--muted)!important;font-size:.66rem!important;font-weight:800!important}.exercise-weight-line{color:#59a8ff!important;font-size:.78rem!important;font-weight:900!important}.level-progress-bar{display:block!important;height:8px!important;background:var(--surface3)!important;border-radius:999px!important;overflow:hidden!important}.level-progress-bar i{display:block;height:100%;background:#59a8ff;border-radius:inherit}.level-progress-scale{display:flex!important;justify-content:space-between!important;gap:10px!important;color:var(--muted)!important;font-size:.62rem!important;line-height:1!important}.level-progress-scale b{font-weight:700}.weight-goal-progress-info{display:grid;margin-top:10px}.weight-goal-progress-info .exercise-weight-line{font-size:.84rem!important}.weight-goal-progress-info .level-progress-bar{height:9px!important}.popup-weight-progress{display:grid;min-width:205px}.popup-weight-progress .exercise-weight-line{font-size:.76rem!important}.popup-weight-progress .level-progress-bar{height:7px!important}.advance-exercise-mode{width:100%;margin-top:10px}.popup-weight-level{display:block;margin-top:7px!important;white-space:normal!important;max-width:250px}.weight-goal-input,.weight-level-next,.weight-level-scale,.weight-goal-status,.weight-goal-intro{display:none!important}.today-workout-head{align-items:flex-start}.today-completion-controls{display:grid;grid-template-columns:150px 150px;gap:8px;align-items:end}.today-completion-controls label,.today-completion-controls button{width:150px}.today-completion-controls label{display:block}.today-completion-controls input,.today-completion-controls button{width:100%;height:42px;box-sizing:border-box}.today-completion-controls small{grid-column:1/-1;min-height:1em;color:var(--accent);text-align:right}.today-inline-workout-card{margin-top:0}.today-inline-exercise-list{display:grid;gap:7px}.today-program-exercise-card{width:100%;max-width:none;background:var(--surface)}.today-program-exercise-card.skipped{opacity:.78;border-style:dashed}.today-program-exercise-card.skipped>.today-program-exercise-summary{cursor:default}.today-exercise-actions{display:flex;justify-content:flex-end;padding:0 11px 9px}.today-exercise-actions button{padding:7px 11px;font-size:.76rem}.today-skip-panel{display:grid;gap:5px;margin:0 11px 10px;padding:10px;border:1px solid var(--line);background:var(--surface3);border-radius:10px}.today-skip-panel label{display:grid;gap:5px;color:var(--muted);font-size:.72rem}.today-skip-panel select{width:100%}.today-skip-panel small{color:var(--muted);font-size:.7rem}.today-replacement-wrap{margin:0 11px 11px}.today-replacement-label{margin:0 0 5px;color:var(--accent);font-size:.72rem;font-weight:900}.today-replacement-card{background:var(--surface)!important}.today-replacement-summary{cursor:default!important}.today-program-exercise-card .simple-editor{background:var(--surface);padding-top:10px;border-top:1px solid var(--line)}.today-menu-chooser{width:100%}.today-menu-chooser select{width:100%}.flex-plan-settings{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(120px,.6fr) minmax(120px,.6fr) auto;gap:12px;align-items:end;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}.flex-plan-settings>div p{margin:4px 0 0;font-size:.8rem}.flex-plan-settings label{display:grid;gap:5px;color:var(--muted);font-size:.76rem}.flex-plan-settings input{width:100%;box-sizing:border-box}.flex-plan-settings-status{grid-column:1/-1;margin:0;color:var(--accent);font-size:.76rem;min-height:1.1em}.progress-note{margin:4px 0 0;font-size:.78rem}.settings-share-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px}.settings-share-box strong{font-size:1.02rem}.settings-share-box p{margin:4px 0 0;font-size:.8rem}.settings-share-status{grid-column:1/-1;color:var(--accent)!important;min-height:1.2em}.settings-share-box .primary{white-space:nowrap}.legacy-progress-hidden{display:none!important}.exercise-progress-curve{min-height:260px;overflow-x:auto}.exercise-progress-curve svg{display:block;width:100%;min-width:620px;height:auto}.exercise-chart-grid{stroke:var(--line);stroke-width:1}.exercise-chart-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.exercise-chart-dot{fill:var(--surface);stroke:var(--accent);stroke-width:4}.exercise-chart-text,.exercise-chart-unit{fill:var(--muted);font:12px Inter,"Noto Sans JP",system-ui,sans-serif}.exercise-progress-rows{margin-top:12px;border-top:1px solid var(--line)}.progress-log-head,.progress-log-row{display:grid;grid-template-columns:1.2fr .8fr 1fr .7fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.82rem}.progress-log-head{color:var(--muted);font-size:.72rem;font-weight:800}.exercise-history-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}.exercise-history-row>span{color:var(--muted);font-size:.8rem}.hero-actions{max-width:260px}.hero-actions #startTodayBtn{width:100%}
     .buffet-selection-summary{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.buffet-selection-summary span{color:var(--muted);font-size:.78rem}.buffet-exercise-grid{display:grid;gap:8px}.buffet-card-top{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center}.buffet-select-btn{margin-right:10px;min-height:40px}.buffet-exercise-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.buffet-exercise-card.quota-done:not(.selected){opacity:.62}.buffet-quota-row{display:flex;justify-content:space-between;gap:8px;padding:0 12px 10px;color:var(--muted);font-size:.72rem}.buffet-exercise-card.selected .buffet-quota-row{color:var(--accent)}.buffet-program-note{padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.buffet-program-note p{margin:5px 0 0;color:var(--muted);font-size:.82rem}.buffet-quota-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.buffet-quota-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.buffet-quota-card>div{display:flex;align-items:center;gap:7px;min-width:0}.buffet-quota-card>span{color:var(--muted);font-size:.72rem}.buffet-quota-card>b{font-size:.78rem}.buffet-quota-card.done{border-color:var(--accent)}.training-modes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.training-mode-item{border:1px solid var(--line);background:var(--surface2);border-radius:13px;padding:11px}.training-mode-item.done{border-color:var(--accent)}.training-mode-head{display:flex;align-items:center;gap:7px;margin-bottom:8px}.training-mode-head>strong{min-width:0;flex:1}.training-mode-progress{margin-bottom:8px}.training-mode-item .advance-exercise-mode{width:100%;margin-top:8px}.mode-pass-done{display:block;color:var(--accent);font-size:.76rem;font-weight:900;margin-top:8px}
-    @media(max-width:700px){.buffet-card-top{grid-template-columns:1fr}.buffet-select-btn{margin:0 10px 10px}.buffet-selection-summary{align-items:flex-start;flex-direction:column}.buffet-quota-grid,.training-modes-grid{grid-template-columns:1fr}.today-workout-head{flex-direction:column}.today-completion-controls{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}.today-completion-controls label,.today-completion-controls button{width:100%}.today-completion-controls input{width:100%;min-width:0}.catalog-program-card{padding:8px!important}.catalog-program-card>.section-head{padding:4px}.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}.settings-share-box{grid-template-columns:1fr}.settings-share-box .primary{width:100%}}
+    @media(max-width:700px){.buffet-card-top{grid-template-columns:1fr}.buffet-select-btn{margin:0 10px 10px}.buffet-selection-summary{align-items:flex-start;flex-direction:column}.buffet-quota-grid,.training-modes-grid{grid-template-columns:1fr}.today-workout-head{flex-direction:column}.today-completion-controls{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}.today-completion-controls label,.today-completion-controls button{width:100%}.today-completion-controls input{width:100%;min-width:0}.catalog-program-card{padding:8px!important}.catalog-program-card>.section-head{padding:4px}.weight-goals-grid{grid-template-columns:1fr}.catalog-day-exercises{grid-template-columns:1fr}.simple-tabs{padding-inline:12px}.simple-exercise-summary{grid-template-columns:1fr}.exercise-values{justify-content:flex-start}.simple-editor{grid-template-columns:1fr 1fr}.simple-editor>*:last-child{grid-column:1/-1}.progress-log-head,.progress-log-row{grid-template-columns:1fr .7fr 1fr .6fr;font-size:.74rem}.exercise-history-row{grid-template-columns:1fr}.exercise-history-row>span:last-child{margin-top:-6px}.weight-goal-compact{grid-template-columns:1fr 1fr}.flex-plan-settings{grid-template-columns:1fr 1fr}.flex-plan-settings>div{grid-column:1/-1}.flex-plan-settings .primary{grid-column:1/-1}.settings-share-box{grid-template-columns:1fr}.settings-share-box .primary{width:100%}}
   `;
   document.head.appendChild(style);
 
