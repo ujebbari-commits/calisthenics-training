@@ -200,7 +200,13 @@
   }
   function buffetDraft(dateValue){
     const key=String(dateValue||localDateValue());
-    if(!Array.isArray(buffetDrafts[key]))buffetDrafts[key]=[];
+    const allowed=new Set(Object.keys(buffetQuotaMap()));
+    if(!Array.isArray(buffetDrafts[key])){
+      const existing=buffetRecordForDate(key);
+      buffetDrafts[key]=Array.isArray(existing?.buffetExerciseIds)?existing.buffetExerciseIds.filter(id=>allowed.has(id)):[];
+    }else{
+      buffetDrafts[key]=buffetDrafts[key].filter(id=>allowed.has(id));
+    }
     return buffetDrafts[key];
   }
   function currentBuffetDate(){
