@@ -7,11 +7,13 @@
       const raw=JSON.parse(localStorage.getItem(PREF_KEY)||'null')||{};
       return {
         duration:Math.max(1,Math.min(3600,Number(raw.duration)||90)),
+        quickSingle:Math.max(1,Math.min(3600,Number(raw.quickSingle)||35)),
+        quickDouble:Math.max(1,Math.min(3600,Number(raw.quickDouble)||65)),
         sinkId:String(raw.sinkId||''),
         sinkLabel:String(raw.sinkLabel||'')
       };
     }catch{
-      return {duration:90,sinkId:'',sinkLabel:''};
+      return {duration:90,quickSingle:35,quickDouble:65,sinkId:'',sinkLabel:''};
     }
   };
 
@@ -191,7 +193,7 @@
   style.textContent=`
     .topbar-actions{display:flex;gap:8px;align-items:center}
     .quick-timer-btn{touch-action:manipulation;position:relative}
-    .quick-timer-btn::after{content:'35/65';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:.52rem;font-weight:850;color:var(--muted);white-space:nowrap;pointer-events:none}
+    .quick-timer-btn::after{content:attr(data-quick-label);position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:.52rem;font-weight:850;color:var(--muted);white-space:nowrap;pointer-events:none}
     .timer-card{max-width:680px;width:100%;justify-self:center}
     .timer-card .section-head{margin-bottom:2px}
     .timer-display{font-size:clamp(4rem,16vw,7rem);font-weight:950;letter-spacing:.03em;line-height:1;text-align:center;padding:26px 8px;color:var(--accent);font-variant-numeric:tabular-nums}
@@ -207,11 +209,11 @@
     .timer-audio-box p{margin:5px 0 0;font-size:.78rem}
     .timer-audio-note{color:var(--muted);opacity:.9}
     .timer-audio-actions{display:grid;gap:6px}
-    .timer-audio-actions button{white-space:nowrap}
+    .timer-audio-actions button{white-space:nowrap}.quick-timer-settings{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface2)}.quick-timer-settings label{display:grid;gap:5px;color:var(--muted);font-size:.76rem}.quick-timer-settings input{width:100%}.quick-timer-settings-status{grid-column:1/-1;color:var(--accent);font-size:.76rem;min-height:1em}
     @media(max-width:700px){
       .timer-presets{grid-template-columns:repeat(3,1fr)}
       .timer-audio-box{grid-template-columns:1fr}
-      .timer-audio-actions{grid-template-columns:1fr 1fr}
+      .timer-audio-actions{grid-template-columns:1fr 1fr}.quick-timer-settings{grid-template-columns:1fr 1fr}.quick-timer-settings button{grid-column:1/-1}
     }
   `;
   document.head.appendChild(style);
@@ -277,10 +279,42 @@
   const quickBtn=document.createElement('button');
   quickBtn.type='button';
   quickBtn.className='icon-btn quick-timer-btn';
-  quickBtn.setAttribute('aria-label','タイマー。1タップで35秒、2連続タップで65秒');
-  quickBtn.title='1タップ: 35秒 / 2タップ: 65秒';
+  const syncQuickButtonLabel=()=>{
+    quickBtn.dataset.quickLabel=prefs.quickSingle+'/'+prefs.quickDouble;
+    quickBtn.setAttribute('aria-label','タイマー。1タップで'+prefs.quickSingle+'秒、2連続タップで'+prefs.quickDouble+'秒');
+    quickBtn.title='1タップ: '+prefs.quickSingle+'秒 / 2タップ: '+prefs.quickDouble+'秒';
+  };
+  syncQuickButtonLabel();
   quickBtn.textContent='⏱';
   actions.insertBefore(quickBtn,themeBtn);
+
+  const settingsCard=document.querySelector('.app-settings-card');
+  if(settingsCard&&!settingsCard.querySelector('#quickTimerSettings')){
+    const quickSettings=document.createElement('div');
+    quickSettings.id='quickTimerSettings';
+    quickSettings.className='quick-timer-settings';
+    quickSettings.innerHTML='<label><span>1タップ</span><input id="quickTimerSingleInput" type="number" min="1" max="3600" step="1" inputmode="numeric"></label>'+
+      '<label><span>2タップ</span><input id="quickTimerDoubleInput" type="number" min="1" max="3600" step="1" inputmode="numeric"></label>'+
+      '<button type="button" id="saveQuickTimerBtn" class="primary">保存</button><span id="quickTimerSettingsStatus" class="quick-timer-settings-status"></span>';
+    settingsCard.appendChild(quickSettings);
+    const single=quickSettings.querySelector('#quickTimerSingleInput');
+    const double=quickSettings.querySelector('#quickTimerDoubleInput');
+    const status=quickSettings.querySelector('#quickTimerSettingsStatus');
+    single.value=String(prefs.quickSingle);
+    double.value=String(prefs.quickDouble);
+    quickSettings.querySelector('#saveQuickTimerBtn').onclick=()=>{
+      const a=Math.round(Number(single.value)),b=Math.round(Number(double.value));
+      if(!Number.isFinite(a)||!Number.isFinite(b)||a<1||b<1||a>3600||b>3600){
+        status.textContent='1〜3600秒で入力してください。';
+        return;
+      }
+      prefs.quickSingle=a;
+      prefs.quickDouble=b;
+      savePrefs();
+      syncQuickButtonLabel();
+      status.textContent='保存しました。';
+    };
+  }
 
   const display=card.querySelector('#restTimerDisplay');
   const startBtn=card.querySelector('#restTimerStartBtn');
@@ -580,13 +614,13 @@
     if(quickTapTimer){
       clearTimeout(quickTapTimer);
       quickTapTimer=null;
-      quickStart(65);
+      quickStart(prefs.quickDouble);
       return;
     }
 
     quickTapTimer=setTimeout(()=>{
       quickTapTimer=null;
-      quickStart(35);
+      quickStart(prefs.quickSingle);
     },280);
   });
 
