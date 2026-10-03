@@ -247,14 +247,17 @@
     date.setDate(date.getDate()-day);
     return localDateValue(date);
   }
+  function isFlexPlanRecord(h){
+    return h?.completedVia==='flex-strength-plan'||h?.completedVia==='strength-buffet';
+  }
   function buffetRecordForDate(dateValue){
-    return state.history.find(h=>h.completedVia==='strength-buffet'&&localDateValue(new Date(h.iso))===dateValue);
+    return state.history.find(h=>isFlexPlanRecord(h)&&localDateValue(new Date(h.iso))===dateValue);
   }
   function buffetCounts(dateValue,excludeRecord=null){
     const week=mondayKey(dateValue);
     const counts={};
     (state.history||[]).forEach(h=>{
-      if(h===excludeRecord||h.completedVia!=='strength-buffet'||mondayKey(localDateValue(new Date(h.iso)))!==week)return;
+      if(h===excludeRecord||!isFlexPlanRecord(h)||mondayKey(localDateValue(new Date(h.iso)))!==week)return;
       (h.buffetExerciseIds||[]).forEach(id=>counts[id]=(counts[id]||0)+1);
     });
     return counts;
@@ -268,6 +271,7 @@
     }else{
       buffetDrafts[key]=buffetDrafts[key].filter(id=>allowed.has(id));
     }
+    if(buffetDrafts[key].length>flexPlanPrefs.dailyCount)buffetDrafts[key]=buffetDrafts[key].slice(0,flexPlanPrefs.dailyCount);
     return buffetDrafts[key];
   }
   function currentBuffetDate(){
@@ -275,7 +279,7 @@
   }
   function buffetSessionKey(dateValue){
     const week=mondayKey(dateValue);
-    const done=(state.history||[]).filter(h=>h.completedVia==='strength-buffet'&&mondayKey(localDateValue(new Date(h.iso)))===week).length;
+    const done=(state.history||[]).filter(h=>isFlexPlanRecord(h)&&mondayKey(localDateValue(new Date(h.iso)))===week).length;
     const slots=activeCatalogProgram();
     return slots[Math.min(done,slots.length-1)]?.key||slots[0]?.key||'A';
   }
@@ -343,16 +347,16 @@
     const existing=completionRecord(input.value);
     const selected=buffetDraft(input.value).length;
     button.textContent=existing?'更新':'完了';
-    button.disabled=selected!==STRENGTH_BUFFET.dailyCount;
-    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+STRENGTH_BUFFET.dailyCount;
+    button.disabled=selected!==flexPlanPrefs.dailyCount;
+    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+flexPlanPrefs.dailyCount;
   }
   function completeTodayWorkoutInline(){
     const input=document.querySelector('#todayCompleteDate');
     if(!input?.value)return;
     const dateValue=input.value;
     const selected=[...new Set(buffetDraft(dateValue))];
-    if(selected.length!==STRENGTH_BUFFET.dailyCount){
-      showToast('1日'+STRENGTH_BUFFET.dailyCount+'種目を選択してください');
+    if(selected.length!==flexPlanPrefs.dailyCount){
+      showToast('1日'+flexPlanPrefs.dailyCount+'種目を選択してください');
       return;
     }
     const quotas=buffetQuotaMap();
@@ -366,8 +370,8 @@
     const sessionKey=existing?.key||buffetSessionKey(dateValue);
     const record={
       iso:selectedDateToIso(dateValue),key:sessionKey,level:state.level,programMode:Number(state.programMode||5),
-      menuTitle:'Strength Buffet',menuCode:'BUFFET',results:existing?.results||[],notes:existing?.notes||'',
-      buffetExerciseIds:selected,completedVia:'strength-buffet'
+      menuTitle:FLEX_STRENGTH_PLAN.name,menuCode:'FLEX',planDays:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,
+      results:existing?.results||[],notes:existing?.notes||'',buffetExerciseIds:selected,completedVia:'flex-strength-plan'
     };
     if(existing)Object.assign(existing,record); else state.history.push(record);
     state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
@@ -379,9 +383,11 @@
     if(typeof renderAll==='function')renderAll();
     renderCatalogProgram();
     renderTrainingModes();
+    renderFlexPlanHeader();
+    renderFlexPlanStats();
     input.value=localDateValue();
     renderTodayWorkoutInline();
-    showToast(existing?'完了記録を更新しました':'Strength Buffetを完了しました');
+    showToast(existing?'完了記録を更新しました':'Flex Strength Planを完了しました');
   }
   function bindTodayCompletionControls(card){
     const date=card.querySelector('#todayCompleteDate');
@@ -393,6 +399,67 @@
     }
     if(button)button.addEventListener('click',completeTodayWorkoutInline);
     renderTodayCompletionState();
+  }
+
+  function renderFlexPlanHeader(){
+    const title=document.querySelector('#todayTitle');
+    const summary=document.querySelector('#todaySummary');
+    const label=document.querySelector('#todayLabel');
+    if(title)title.textContent=FLEX_STRENGTH_PLAN.name;
+    if(summary)summary.textContent='筋力・筋肥大 · 1日'+flexPlanPrefs.dailyCount+'種目 × 週'+flexPlanPrefs.daysPerWeek+'日 · ベンチプレス週3回 5×5';
+    if(label)label.textContent='FLEX STRENGTH · '+buffetWeeklyTotal()+' WEEKLY SLOTS';
+  }
+  function renderFlexPlanStats(){
+    const week=mondayKey(localDateValue());
+    const records=(state.history||[]).filter(h=>isFlexPlanRecord(h)&&mondayKey(localDateValue(new Date(h.iso)))===week);
+    const weekCount=document.querySelector('#weekCount');
+    if(weekCount)weekCount.textContent=records.length+' / '+flexPlanPrefs.daysPerWeek;
+    const weeks=new Set((state.history||[]).filter(isFlexPlanRecord).map(h=>mondayKey(localDateValue(new Date(h.iso)))));
+    let streak=0;
+    const cursor=new Date(week+'T12:00:00');
+    while(weeks.has(localDateValue(cursor))){
+      streak++;
+      cursor.setDate(cursor.getDate()-7);
+    }
+    const streakEl=document.querySelector('#streakCount');
+    if(streakEl)streakEl.textContent=String(streak);
+  }
+  function bindFlexPlanSettings(card){
+    const daily=card.querySelector('#flexPlanDailyCount');
+    const days=card.querySelector('#flexPlanDaysPerWeek');
+    const saveBtn=card.querySelector('#saveFlexPlanSettings');
+    const status=card.querySelector('#flexPlanSettingsStatus');
+    if(!daily||!days||!saveBtn)return;
+    daily.value=String(flexPlanPrefs.dailyCount);
+    days.value=String(flexPlanPrefs.daysPerWeek);
+    saveBtn.onclick=()=>{
+      const nextDaily=Math.round(Number(daily.value));
+      const nextDays=Math.round(Number(days.value));
+      if(!Number.isFinite(nextDaily)||nextDaily<1||nextDaily>12){
+        status.textContent='1日あたりは1〜12種目で入力してください。';
+        return;
+      }
+      if(!Number.isFinite(nextDays)||nextDays<3||nextDays>7){
+        status.textContent='週3〜7日で入力してください（ベンチ週3回のため最低3日）。';
+        return;
+      }
+      flexPlanPrefs.dailyCount=nextDaily;
+      flexPlanPrefs.daysPerWeek=nextDays;
+      saveFlexPlanPrefs();
+      const allowed=new Set(Object.keys(buffetQuotaMap()));
+      Object.keys(buffetDrafts).forEach(key=>{
+        buffetDrafts[key]=(Array.isArray(buffetDrafts[key])?buffetDrafts[key]:[]).filter(id=>allowed.has(id)).slice(0,flexPlanPrefs.dailyCount);
+      });
+      saveBuffetDrafts();
+      applyCatalogTemplates();
+      if(typeof renderAll==='function')renderAll();
+      renderFlexPlanHeader();
+      renderFlexPlanStats();
+      renderTodayWorkoutInline();
+      renderCatalogProgram();
+      renderTrainingModes();
+      status.textContent='保存しました · 1日'+flexPlanPrefs.dailyCount+'種目 × 週'+flexPlanPrefs.daysPerWeek+'日';
+    };
   }
 
   function setupSections(){
@@ -431,7 +498,7 @@
     const catalogProgramCard=document.createElement('section');
     catalogProgramCard.className='card catalog-program-card';
     catalogProgramCard.dataset.appSection='program';
-    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">STRENGTH BUFFET</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
+    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">FLEX STRENGTH PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
     if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
     const exerciseModesCard=document.createElement('section');
     exerciseModesCard.className='card exercise-modes-card';
@@ -458,7 +525,11 @@
     settingsCard.className='card app-settings-card';
     settingsCard.dataset.appSection='settings';
     settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
-      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Strength Buffetの週間枠を共有用JSONにまとめます。</p></div>'+
+      '<div class="flex-plan-settings"><div><strong>Flex Strength Plan</strong><p class="muted">筋力・筋肥大向け。ベンチプレスは週3回5×5、それ以外は原則12×3。週間枠は設定値に合わせて自動配分します。</p></div>'+
+      '<label><span>1日あたりの種目数</span><input id="flexPlanDailyCount" type="number" min="1" max="12" step="1" inputmode="numeric"></label>'+
+      '<label><span>週のトレーニング日数</span><input id="flexPlanDaysPerWeek" type="number" min="3" max="7" step="1" inputmode="numeric"></label>'+
+      '<button type="button" id="saveFlexPlanSettings" class="primary">保存</button><p id="flexPlanSettingsStatus" class="flex-plan-settings-status"></p></div>'+
+      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Flex Strength Planの週間枠を共有用JSONにまとめます。</p></div>'+
       '<button type="button" id="shareTrainingDataBtn" class="primary">ChatGPTに共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
     shell.appendChild(settingsCard);
 
@@ -492,23 +563,15 @@
     renderTodayWorkoutInline();
     renderCatalogProgram();
     renderTrainingModes();
-    const modeSelect=document.querySelector('#programModeSelect');
-    if(modeSelect)modeSelect.addEventListener('change',()=>setTimeout(()=>{
-      applyCatalogTemplates();
-      const keys=activeCatalogProgram().map(x=>x.key);
-      if(ui.todayMenuKey&&!keys.includes(ui.todayMenuKey))ui.todayMenuKey=null;
-      saveUi();
-      if(typeof renderAll==='function')renderAll();
-      renderTodayMenuSelector();
-      renderTodayWorkoutInline();
-      renderCatalogProgram();
-      renderTrainingModes();
-    },0));
+
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
+    bindFlexPlanSettings(settingsCard);
     const shareBtn=document.querySelector('#shareTrainingDataBtn');
     if(shareBtn)shareBtn.onclick=shareTrainingData;
+    renderFlexPlanHeader();
+    renderFlexPlanStats();
     showTab(ui.tab||'today');
   }
 
@@ -552,11 +615,12 @@
       purpose:'ChatGPTに現在のトレーニングアプリ情報を共有し、今後のメニュー・負荷・進捗相談に利用するためのデータ',
       appState:{
         programMode:Number(state.programMode||4),
-        todayMenuKey:ui.todayMenuKey||null,
+        flexPlan:{name:FLEX_STRENGTH_PLAN.name,daysPerWeek:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount},
+        todayMenuKey:null,
         level:state.level??null,
         unlockedLevel:state.unlockedLevel??null
       },
-      weeklyProgram:{type:'strength-buffet',days:Number(state.programMode||5),dailyExerciseCount:STRENGTH_BUFFET.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
+      weeklyProgram:{type:'flex-strength-plan',goal:'strength-and-hypertrophy',days:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
       currentWeekExerciseCounts:buffetCounts(localDateValue()),
       exercises:exerciseSnapshot,
       exerciseHistory,
@@ -858,9 +922,9 @@
     const existing=buffetRecordForDate(dateValue);
     const counts=buffetCounts(dateValue,existing);
     const quotas=buffetQuotaMap();
-    title.textContent='Strength Buffet · '+STRENGTH_BUFFET.dailyCount+'種目';
+    title.textContent=FLEX_STRENGTH_PLAN.name+' · '+flexPlanPrefs.dailyCount+'種目';
     desc.textContent='体調を見て選択。週の必要回数だけ守れば、いつ実施するかは自由です。ベンチプレスは週3回・5×5、それ以外は原則12×3。';
-    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+STRENGTH_BUFFET.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
+    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+flexPlanPrefs.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
       '<div class="buffet-exercise-grid">'+buffetPool().map(e=>{
         const t=targets[e.id],isSelected=selected.includes(e.id);
         const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
@@ -884,7 +948,7 @@
       const idx=list.indexOf(id);
       if(idx>=0)list.splice(idx,1);
       else{
-        if(list.length>=STRENGTH_BUFFET.dailyCount){showToast('1日は'+STRENGTH_BUFFET.dailyCount+'種目までです');return;}
+        if(list.length>=flexPlanPrefs.dailyCount){showToast('1日は'+flexPlanPrefs.dailyCount+'種目までです');return;}
         const current=buffetCounts(dateValue,existing);
         if((current[id]||0)>=Number(quotas[id]||0)){showToast('この種目は今週の必要回数を達成済みです');return;}
         list.push(id);
@@ -907,9 +971,9 @@
     const total=document.querySelector('#buffetWeeklyTotal');
     if(!title||!grid)return;
     const dateValue=currentBuffetDate(),counts=buffetCounts(dateValue),quotas=buffetQuotaMap();
-    title.textContent='週'+state.programMode+'日 · 1日'+STRENGTH_BUFFET.dailyCount+'種目';
+    title.textContent='週'+flexPlanPrefs.daysPerWeek+'日 · 1日'+flexPlanPrefs.dailyCount+'種目';
     if(total)total.textContent='週 '+buffetWeeklyTotal()+'枠';
-    grid.innerHTML='<div class="buffet-program-note"><strong>ビュッフェ方式</strong><p>その日の体調に合わせて'+STRENGTH_BUFFET.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
+    grid.innerHTML='<div class="buffet-program-note"><strong>Flex方式</strong><p>その日の体調に合わせて'+flexPlanPrefs.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
       '<div class="buffet-quota-grid">'+buffetPool().map(e=>{
         const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
         return '<article class="buffet-quota-card '+(done>=quota?'done':'')+'">'+
@@ -1039,7 +1103,7 @@
 
     const panel=document.createElement('div');
     panel.id='exerciseProgressPanel';
-    panel.innerHTML='<div class="section-head progress-head"><div><p class="eyebrow">PROGRESS</p><h2>種目別進捗</h2></div><label class="select-label">種目<select id="exerciseProgressSelect"></select></label></div><div id="exerciseProgressSummary" class="chart-stats"></div><div id="exerciseProgressCurve" class="exercise-progress-curve"></div><div id="exerciseProgressRows" class="exercise-progress-rows"></div>';
+    panel.innerHTML='<div class="section-head progress-head"><div><p class="eyebrow">PROGRESS</p><h2>重量・記録推移</h2><p class="muted progress-note">重量種目は保存したkgを時系列グラフで追跡します。時間種目は時間の推移を表示します。</p></div><label class="select-label">種目<select id="exerciseProgressSelect"></select></label></div><div id="exerciseProgressSummary" class="chart-stats"></div><div id="exerciseProgressCurve" class="exercise-progress-curve"></div><div id="exerciseProgressRows" class="exercise-progress-rows"></div>';
     card.appendChild(panel);
 
     const sel=panel.querySelector('#exerciseProgressSelect');
