@@ -11,6 +11,7 @@
   const TODAY_ADJUSTMENTS_KEY='training.todayAdjustments.v1';
   const BUFFET_DRAFTS_KEY='training.strengthBuffetDrafts.v1';
   const PROGRAM_PREF_VERSION_KEY='training.strengthBuffetProgramVersion';
+  const FLEX_PLAN_PREF_KEY='training.flexStrengthPlan.v1';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
@@ -46,27 +47,45 @@
     {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
-  const STRENGTH_BUFFET={
-    dailyCount:6,
-    quotas:{
-      5:{
-        heavy_bench_press:3,linear_leg_press:2,seated_leg_press:1,seated_leg_curl:2,leg_extension:1,leg_press_calf_raise:2,
-        lat_pulldown:2,chest_supported_row:2,biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,
-        rotary_torso:1,back_extension:1,lateral_raise:1,rear_delt:1,vertical_jump:2,hip_abductor:1
-      },
-      4:{
-        heavy_bench_press:3,linear_leg_press:2,seated_leg_curl:2,leg_press_calf_raise:1,lat_pulldown:2,chest_supported_row:2,
-        biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,rotary_torso:1,back_extension:1,lateral_raise:1,vertical_jump:1
-      }
+  const FLEX_STRENGTH_PLAN={
+    name:'Flex Strength Plan',
+    defaultDailyCount:6,
+    defaultDaysPerWeek:5,
+    benchWeekly:3,
+    baseQuotas:{
+      heavy_bench_press:3,
+      linear_leg_press:2,
+      seated_leg_press:1,
+      seated_leg_curl:2,
+      leg_extension:1,
+      leg_press_calf_raise:2,
+      lat_pulldown:2,
+      chest_supported_row:2,
+      biceps_machine:2,
+      dead_hang:2,
+      ab_crunch:2,
+      ab_roller:2,
+      rotary_torso:1,
+      back_extension:1,
+      lateral_raise:1,
+      rear_delt:1,
+      pec_fly:1,
+      chest_press:1,
+      shoulder_press:1
     }
   };
-  const makeBuffetSlots=count=>Array.from({length:count},(_,i)=>({
-    key:String.fromCharCode(65+i),code:'BUFFET '+(i+1),title:'Strength Buffet',
-    desc:'体調を見て週の残り枠から'+STRENGTH_BUFFET.dailyCount+'種目を選ぶ。',items:[]
-  }));
-  const catalogPrograms={4:makeBuffetSlots(4),5:makeBuffetSlots(5)};
+  function makeFlexSlots(count){
+    return Array.from({length:count},(_,i)=>({
+      key:String.fromCharCode(65+i),
+      code:'FLEX '+(i+1),
+      title:FLEX_STRENGTH_PLAN.name,
+      desc:'体調を見て週間の残り枠から種目を選ぶ筋力・筋肥大プラン。',
+      items:[]
+    }));
+  }
+
   function exerciseById(id){return exercises.find(e=>e.id===id)}
-  function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
+  function activeCatalogProgram(){return makeFlexSlots(flexPlanPrefs.daysPerWeek)}
   const exercisePartFilters=[
     ['all','すべて'],
     ['chest','胸'],
@@ -87,6 +106,7 @@
   function applyCatalogTemplates(){
     if(typeof templates==='undefined')return;
     const defs=activeCatalogProgram();
+    ['A','B','C','D','E','F','G'].forEach(k=>{if(templates[k])delete templates[k];});
     for(const day of defs){
       templates[day.key]={
         code:day.code,
@@ -98,7 +118,7 @@
         })
       };
     }
-    if(Number(state.programMode)===4 && templates.E) delete templates.E;
+
   }
 
   function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
@@ -114,6 +134,11 @@
   const exerciseModes=read(EXERCISE_MODE_KEY,{});
   const todayAdjustments=read(TODAY_ADJUSTMENTS_KEY,{});
   const buffetDrafts=read(BUFFET_DRAFTS_KEY,{});
+  const rawFlexPlanPrefs=read(FLEX_PLAN_PREF_KEY,{});
+  const flexPlanPrefs={
+    dailyCount:Math.max(1,Math.min(12,Number(rawFlexPlanPrefs.dailyCount)||FLEX_STRENGTH_PLAN.defaultDailyCount)),
+    daysPerWeek:Math.max(3,Math.min(7,Number(rawFlexPlanPrefs.daysPerWeek)||FLEX_STRENGTH_PLAN.defaultDaysPerWeek))
+  };
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
@@ -127,8 +152,9 @@
   const saveExerciseModes=()=>localStorage.setItem(EXERCISE_MODE_KEY,JSON.stringify(exerciseModes));
   const saveTodayAdjustments=()=>localStorage.setItem(TODAY_ADJUSTMENTS_KEY,JSON.stringify(todayAdjustments));
   const saveBuffetDrafts=()=>localStorage.setItem(BUFFET_DRAFTS_KEY,JSON.stringify(buffetDrafts));
+  const saveFlexPlanPrefs=()=>localStorage.setItem(FLEX_PLAN_PREF_KEY,JSON.stringify(flexPlanPrefs));
   if(Number(localStorage.getItem(PROGRAM_PREF_VERSION_KEY)||0)<1){
-    const quotaIds=new Set([...Object.keys(STRENGTH_BUFFET.quotas[5]),...Object.keys(STRENGTH_BUFFET.quotas[4])]);
+    const quotaIds=new Set(Object.keys(FLEX_STRENGTH_PLAN.baseQuotas));
     quotaIds.forEach(id=>{
       const def=exerciseById(id),target=targets[id];
       if(!def||!target)return;
@@ -174,11 +200,46 @@
   function badge(e){return '<span class="muscle-badge">'+icon(e.muscle)+'<span>'+esc(e.label)+'</span></span>'}
 
   function buffetQuotaMap(){
-    return STRENGTH_BUFFET.quotas[Number(state.programMode)===4?4:5];
+    const totalSlots=flexPlanPrefs.dailyCount*flexPlanPrefs.daysPerWeek;
+    const days=flexPlanPrefs.daysPerWeek;
+    const base=FLEX_STRENGTH_PLAN.baseQuotas;
+    const quotas={};
+    const bench=Math.min(FLEX_STRENGTH_PLAN.benchWeekly,days,totalSlots);
+    quotas.heavy_bench_press=bench;
+    let remaining=Math.max(0,totalSlots-bench);
+    const ids=Object.keys(base).filter(id=>id!=='heavy_bench_press');
+    const weightTotal=ids.reduce((sum,id)=>sum+Number(base[id]||0),0);
+    const fractions=[];
+    let assigned=0;
+    ids.forEach(id=>{
+      const raw=weightTotal>0?remaining*Number(base[id]||0)/weightTotal:0;
+      const q=Math.min(days,Math.floor(raw));
+      quotas[id]=q;
+      assigned+=q;
+      fractions.push({id,fraction:raw-Math.floor(raw),weight:Number(base[id]||0)});
+    });
+    let left=remaining-assigned;
+    const order=fractions.sort((a,b)=>b.fraction-a.fraction||b.weight-a.weight||ids.indexOf(a.id)-ids.indexOf(b.id));
+    while(left>0){
+      let progressed=false;
+      for(const item of order){
+        if(left<=0)break;
+        if((quotas[item.id]||0)>=days)continue;
+        quotas[item.id]=(quotas[item.id]||0)+1;
+        left--;
+        progressed=true;
+      }
+      if(!progressed)break;
+    }
+    return Object.fromEntries(Object.entries(quotas).filter(([,q])=>q>0));
   }
   function buffetPool(){
     return Object.keys(buffetQuotaMap()).map(exerciseById).filter(Boolean);
   }
+  function buffetWeeklyTotal(){
+    return flexPlanPrefs.dailyCount*flexPlanPrefs.daysPerWeek;
+  }
+
   function mondayKey(dateValue){
     const [y,m,d]=String(dateValue||localDateValue()).split('-').map(Number);
     const date=new Date(y,m-1,d,12,0,0,0);
@@ -224,9 +285,6 @@
     if(def.id==='vertical_jump')return '5回 × 3セット';
     if(def.id==='dead_hang')return String(t.reps||def.reps)+' × '+String(t.sets||3)+'セット';
     return String(t.reps||'12')+'回 × '+String(t.sets||3)+'セット';
-  }
-  function buffetWeeklyTotal(){
-    return Object.values(buffetQuotaMap()).reduce((a,b)=>a+Number(b||0),0);
   }
 
   function localDateValue(date=new Date()){
