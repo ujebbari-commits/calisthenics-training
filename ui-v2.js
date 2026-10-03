@@ -173,6 +173,56 @@
   }
   function badge(e){return '<span class="muscle-badge">'+icon(e.muscle)+'<span>'+esc(e.label)+'</span></span>'}
 
+  function buffetQuotaMap(){
+    return STRENGTH_BUFFET.quotas[Number(state.programMode)===4?4:5];
+  }
+  function buffetPool(){
+    return Object.keys(buffetQuotaMap()).map(exerciseById).filter(Boolean);
+  }
+  function mondayKey(dateValue){
+    const [y,m,d]=String(dateValue||localDateValue()).split('-').map(Number);
+    const date=new Date(y,m-1,d,12,0,0,0);
+    const day=(date.getDay()+6)%7;
+    date.setDate(date.getDate()-day);
+    return localDateValue(date);
+  }
+  function buffetRecordForDate(dateValue){
+    return state.history.find(h=>h.completedVia==='strength-buffet'&&localDateValue(new Date(h.iso))===dateValue);
+  }
+  function buffetCounts(dateValue,excludeRecord=null){
+    const week=mondayKey(dateValue);
+    const counts={};
+    (state.history||[]).forEach(h=>{
+      if(h===excludeRecord||h.completedVia!=='strength-buffet'||mondayKey(localDateValue(new Date(h.iso)))!==week)return;
+      (h.buffetExerciseIds||[]).forEach(id=>counts[id]=(counts[id]||0)+1);
+    });
+    return counts;
+  }
+  function buffetDraft(dateValue){
+    const key=String(dateValue||localDateValue());
+    if(!Array.isArray(buffetDrafts[key]))buffetDrafts[key]=[];
+    return buffetDrafts[key];
+  }
+  function currentBuffetDate(){
+    return document.querySelector('#todayCompleteDate')?.value||localDateValue();
+  }
+  function buffetSessionKey(dateValue){
+    const week=mondayKey(dateValue);
+    const done=(state.history||[]).filter(h=>h.completedVia==='strength-buffet'&&mondayKey(localDateValue(new Date(h.iso)))===week).length;
+    const slots=activeCatalogProgram();
+    return slots[Math.min(done,slots.length-1)]?.key||slots[0]?.key||'A';
+  }
+  function buffetPrescription(def){
+    const t=targets[def.id]||{};
+    if(def.id==='heavy_bench_press')return '5回 × 5セット';
+    if(def.id==='vertical_jump')return '5回 × 3セット';
+    if(def.id==='dead_hang')return String(t.reps||def.reps)+' × '+String(t.sets||3)+'セット';
+    return String(t.reps||'12')+'回 × '+String(t.sets||3)+'セット';
+  }
+  function buffetWeeklyTotal(){
+    return Object.values(buffetQuotaMap()).reduce((a,b)=>a+Number(b||0),0);
+  }
+
   function localDateValue(date=new Date()){
     const shifted=new Date(date.getTime()-date.getTimezoneOffset()*60000);
     return shifted.toISOString().slice(0,10);
@@ -216,8 +266,8 @@
           '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
         '</div>'+exerciseEditorHtml(e,t)+'</article></div>';
   }
-  function completionRecord(dateValue,menuKey){
-    return state.history.find(h=>h.key===menuKey&&localDateValue(new Date(h.iso))===dateValue);
+  function completionRecord(dateValue){
+    return buffetRecordForDate(dateValue);
   }
   function renderTodayCompletionState(){
     const input=document.querySelector('#todayCompleteDate');
@@ -226,58 +276,48 @@
     if(!input||!button)return;
     if(!input.value)input.value=localDateValue();
     input.max=localDateValue();
-    const existing=completionRecord(input.value,recommendedKey());
+    const existing=completionRecord(input.value);
+    const selected=buffetDraft(input.value).length;
     button.textContent=existing?'更新':'完了';
-    if(status)status.textContent=existing?'この日付・メニューは記録済みです。':'';
+    button.disabled=selected!==STRENGTH_BUFFET.dailyCount;
+    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+STRENGTH_BUFFET.dailyCount;
   }
   function completeTodayWorkoutInline(){
     const input=document.querySelector('#todayCompleteDate');
     if(!input?.value)return;
-    const menuKey=recommendedKey();
-    const day=activeCatalogProgram().find(d=>d.key===menuKey);
-    if(!day)return;
-    const adjustments=menuAdjustments(menuKey);
-    const exerciseAdjustments=day.items.flatMap(([id])=>{
-      const a=adjustments[id];
-      if(!a?.skipped)return [];
-      const original=exerciseById(id);
-      const replacement=exerciseById(a.replacementId);
-      return [{originalExerciseId:id,originalExerciseName:original?.name||id,status:'skipped',replacementExerciseId:replacement?.id||null,replacementExerciseName:replacement?.name||null}];
-    });
-    const existing=completionRecord(input.value,menuKey);
-    if(existing){
-      existing.exerciseAdjustments=exerciseAdjustments;
-      existing.completedVia='today-inline';
-      existing.programMode=Number(state.programMode||4);
-      existing.menuTitle=day.title;
-      existing.menuCode=day.code;
-    }else{
-      state.history.push({
-        iso:selectedDateToIso(input.value),
-        key:menuKey,
-        level:state.level,
-        programMode:Number(state.programMode||4),
-        menuTitle:day.title,
-        menuCode:day.code,
-        results:[],
-        notes:'',
-        exerciseAdjustments,
-        completedVia:'today-inline'
-      });
+    const dateValue=input.value;
+    const selected=[...new Set(buffetDraft(dateValue))];
+    if(selected.length!==STRENGTH_BUFFET.dailyCount){
+      showToast('1日'+STRENGTH_BUFFET.dailyCount+'種目を選択してください');
+      return;
     }
+    const quotas=buffetQuotaMap();
+    const existing=buffetRecordForDate(dateValue);
+    const counts=buffetCounts(dateValue,existing);
+    const over=selected.find(id=>(counts[id]||0)+1>Number(quotas[id]||0));
+    if(over){
+      showToast((exerciseById(over)?.name||over)+'は今週の選択回数に到達しています');
+      return;
+    }
+    const sessionKey=existing?.key||buffetSessionKey(dateValue);
+    const record={
+      iso:selectedDateToIso(dateValue),key:sessionKey,level:state.level,programMode:Number(state.programMode||5),
+      menuTitle:'Strength Buffet',menuCode:'BUFFET',results:existing?.results||[],notes:existing?.notes||'',
+      buffetExerciseIds:selected,completedVia:'strength-buffet'
+    };
+    if(existing)Object.assign(existing,record); else state.history.push(record);
     state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
     save();
-    delete todayAdjustments[adjustmentBucketKey(menuKey)];
-    saveTodayAdjustments();
-    ui.todayMenuKey=null;
+    delete buffetDrafts[dateValue];
+    saveBuffetDrafts();
     ui.openTodayExercise=null;
     saveUi();
     if(typeof renderAll==='function')renderAll();
     renderCatalogProgram();
-    renderTodayMenuSelector();
+    renderTrainingModes();
     input.value=localDateValue();
     renderTodayWorkoutInline();
-    showToast(existing?'完了記録を更新しました':'メニューを完了済みにしました');
+    showToast(existing?'完了記録を更新しました':'Strength Buffetを完了しました');
   }
   function bindTodayCompletionControls(card){
     const date=card.querySelector('#todayCompleteDate');
@@ -285,7 +325,7 @@
     if(date){
       date.value=localDateValue();
       date.max=localDateValue();
-      date.addEventListener('change',renderTodayCompletionState);
+      date.addEventListener('change',()=>{renderTodayCompletionState();renderTodayWorkoutInline();renderCatalogProgram();});
     }
     if(button)button.addEventListener('click',completeTodayWorkoutInline);
     renderTodayCompletionState();
