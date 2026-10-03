@@ -367,8 +367,13 @@
     const catalogProgramCard=document.createElement('section');
     catalogProgramCard.className='card catalog-program-card';
     catalogProgramCard.dataset.appSection='program';
-    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">WEEKLY PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill">種目タブと共通</span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
+    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">STRENGTH BUFFET</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
     if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
+    const exerciseModesCard=document.createElement('section');
+    exerciseModesCard.className='card exercise-modes-card';
+    exerciseModesCard.dataset.appSection='program';
+    exerciseModesCard.innerHTML='<div class="section-head"><div><p class="eyebrow">EXERCISE LEVELS</p><h2>種目レベル / Mode通過</h2></div></div><div id="trainingModesGrid" class="training-modes-grid"></div>';
+    if(level)level.parentNode.insertBefore(exerciseModesCard,level);else shell.appendChild(exerciseModesCard);
 
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
     if(history)history.dataset.appSection='history';
@@ -389,7 +394,7 @@
     settingsCard.className='card app-settings-card';
     settingsCard.dataset.appSection='settings';
     settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
-      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、重量Mode/Lv、重量目標、記録、履歴、週間プログラムを共有用JSONにまとめます。</p></div>'+
+      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Strength Buffetの週間枠を共有用JSONにまとめます。</p></div>'+
       '<button type="button" id="shareTrainingDataBtn" class="primary">ChatGPTに共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
     shell.appendChild(settingsCard);
 
@@ -402,23 +407,7 @@
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
 
-    const heroActions=document.querySelector('.hero-actions');
-    if(heroActions&&!document.querySelector('#todayMenuSelect')){
-      const chooser=document.createElement('label');
-      chooser.className='today-menu-chooser';
-      chooser.innerHTML='<span>今日やるメニュー</span><select id="todayMenuSelect"></select>';
-      heroActions.insertBefore(chooser,heroActions.firstChild);
-      chooser.querySelector('select').addEventListener('change',e=>{
-        ui.todayMenuKey=e.target.value;
-        ui.openTodayExercise=null;
-        saveUi();
-        if(typeof renderHero==='function')renderHero();
-        if(typeof renderPlan==='function')renderPlan();
-        renderCatalogProgram();
-        renderTodayMenuSelector();
-        renderTodayWorkoutInline();
-      });
-    }
+    document.querySelector('.today-menu-chooser')?.remove();
 
     // Hide redundant controls; functionality remains available through the remaining UI/automatic progression.
     ['startTodayBtn','recoveryBtn','levelUpBtn','resetLevelBtn','exportBtn'].forEach(id=>{const n=document.getElementById(id);if(n)n.classList.add('ui-redundant')});
@@ -503,13 +492,8 @@
         level:state.level??null,
         unlockedLevel:state.unlockedLevel??null
       },
-      weeklyProgram:activeCatalogProgram().map(day=>({
-        key:day.key,
-        code:day.code,
-        title:day.title,
-        description:day.desc,
-        exercises:day.items.map(([id,role])=>({id,name:exerciseById(id)?.name||id,role}))
-      })),
+      weeklyProgram:{type:'strength-buffet',days:Number(state.programMode||5),dailyExerciseCount:STRENGTH_BUFFET.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
+      currentWeekExerciseCounts:buffetCounts(localDateValue()),
       exercises:exerciseSnapshot,
       exerciseHistory,
       sessionHistory:Array.isArray(state.history)?state.history:[],
@@ -758,7 +742,25 @@
     saveWeightAchievements();
     renderExercises();renderCatalogProgram();renderWeightGoals();
   }
-  function renderTrainingModes(){}
+  function renderTrainingModes(){
+    const root=document.querySelector('#trainingModesGrid');
+    if(!root)return;
+    const defs=exercises.filter(hasLevelProgress);
+    root.innerHTML=defs.map(def=>{
+      const st=modeStatus(def),time=isTimeLevelExercise(def),pass=canAdvanceExerciseMode(def);
+      return '<article class="training-mode-item '+(st.level>=10?'done':'')+'" data-mode-exercise="'+def.id+'">'+
+        '<div class="training-mode-head">'+badge(def)+'<strong>'+esc(def.name)+'</strong>'+(time?'':'<span class="exercise-mode-chip">Mode '+st.mode+'</span>')+'</div>'+
+        weightProgressHtml(def,'training-mode-progress')+
+        (pass?'<button type="button" class="primary advance-exercise-mode">Lv10通過 → Mode '+(st.mode+1)+'</button>':
+          (st.level>=10?'<span class="mode-pass-done">'+(time?'Lv10達成':'Mode '+st.mode+' Lv10達成')+'</span>':''))+
+      '</article>';
+    }).join('');
+    root.querySelectorAll('.advance-exercise-mode').forEach(btn=>btn.onclick=()=>{
+      const def=exerciseById(btn.closest('[data-mode-exercise]').dataset.modeExercise);
+      advanceExerciseMode(def);
+      renderTrainingModes();
+    });
+  }
 
   function renderWeightGoals(){
     const root=document.querySelector('#weightGoalsGrid');
@@ -779,12 +781,7 @@
   }
 
   function renderTodayMenuSelector(){
-    const select=document.querySelector('#todayMenuSelect');
-    if(!select)return;
-    const defs=activeCatalogProgram();
-    const key=recommendedKey();
-    select.innerHTML=defs.map(day=>'<option value="'+day.key+'">'+esc(day.title)+'</option>').join('');
-    select.value=key;
+    document.querySelector('.today-menu-chooser')?.remove();
   }
 
   function renderTodayWorkoutInline(){
@@ -792,110 +789,69 @@
     const title=document.querySelector('#todayInlineTitle');
     const desc=document.querySelector('#todayInlineDesc');
     if(!root||!title||!desc)return;
-    const key=recommendedKey();
-    const day=activeCatalogProgram().find(d=>d.key===key);
-    if(!day){
-      root.innerHTML='<div class="empty">メニューがありません。</div>';
-      renderTodayCompletionState();
-      return;
-    }
-    title.textContent=day.title;
-    desc.textContent=day.desc;
-    const adjustments=menuAdjustments(key);
+    const dateValue=currentBuffetDate();
+    const selected=buffetDraft(dateValue);
+    const existing=buffetRecordForDate(dateValue);
+    const counts=buffetCounts(dateValue,existing);
+    const quotas=buffetQuotaMap();
+    title.textContent='Strength Buffet · '+STRENGTH_BUFFET.dailyCount+'種目';
+    desc.textContent='体調を見て選択。週の必要回数だけ守れば、いつ実施するかは自由です。ベンチプレスは週3回・5×5、それ以外は原則12×3。';
+    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+STRENGTH_BUFFET.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
+      '<div class="buffet-exercise-grid">'+buffetPool().map(e=>{
+        const t=targets[e.id],isSelected=selected.includes(e.id);
+        const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
+        const reached=done>=quota&&!isSelected,open=ui.openTodayExercise===e.id;
+        const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
+        return '<article class="simple-exercise buffet-exercise-card '+(isSelected?'selected ':'')+(reached?'quota-done ':'')+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
+          '<div class="buffet-card-top">'+
+            '<button type="button" class="simple-exercise-summary buffet-exercise-summary">'+
+              '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
+              '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(buffetPrescription(e))+'</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
+            '</button>'+
+            '<button type="button" class="'+(isSelected?'primary':'secondary')+' buffet-select-btn" '+(reached?'disabled':'')+'>'+(isSelected?'選択済み':'選択')+'</button>'+
+          '</div>'+
+          '<div class="buffet-quota-row"><span>今週 '+done+' / '+quota+'回</span><span>'+(reached?'週目標達成':(quota-done)+'回残り')+'</span></div>'+
+          (open?exerciseEditorHtml(e,t):'')+
+        '</article>';
+      }).join('')+'</div>';
 
-    root.innerHTML=day.items.map(([id])=>{
-      const e=exerciseById(id);if(!e)return '';
-      const t=targets[id];
-      const adjustment=adjustments[id]||{};
-      const skipped=!!adjustment.skipped;
-      const open=!skipped&&ui.openTodayExercise===id;
-      const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
-      const replacementSelect=skipped?'<div class="today-skip-panel"><label><span>代替種目</span><select class="today-replacement-select" data-original-id="'+id+'">'+replacementOptionsHtml(id,day)+'</select></label><small>痛みがある部位を避け、問題なく行える種目を選んでください。</small></div>':'';
-      return '<article class="simple-exercise today-program-exercise-card '+(open?'open ':'')+(skipped?'skipped':'')+'" data-exercise-id="'+id+'">'+
-        '<button type="button" class="simple-exercise-summary today-program-exercise-summary" '+(skipped?'disabled':'')+'>'+
-          '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
-          '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span><span class="fold-indicator">'+(skipped?'SKIP':(open?'▲':'▼'))+'</span></div>'+
-        '</button>'+
-        '<div class="today-exercise-actions"><button type="button" class="secondary today-skip-btn" data-skip-id="'+id+'">'+(skipped?'スキップ解除':'スキップ')+'</button></div>'+
-        replacementSelect+
-        (skipped&&adjustment.replacementId?replacementCardHtml(adjustment.replacementId):'')+
-        (open?exerciseEditorHtml(e,t):'')+
-      '</article>';
-    }).join('');
-
-    root.querySelectorAll('.today-replacement-select').forEach(select=>{
-      const originalId=select.dataset.originalId;
-      select.value=adjustments[originalId]?.replacementId||'';
-      select.addEventListener('change',()=>{
-        adjustments[originalId]={skipped:true,replacementId:select.value||''};
-        saveTodayAdjustments();
-        renderTodayWorkoutInline();
-      });
-    });
-    root.querySelectorAll('.today-skip-btn').forEach(button=>button.addEventListener('click',()=>{
-      const id=button.dataset.skipId;
-      if(adjustments[id]?.skipped)delete adjustments[id];
-      else adjustments[id]={skipped:true,replacementId:''};
-      if(ui.openTodayExercise===id)ui.openTodayExercise=null;
-      saveUi();
-      saveTodayAdjustments();
+    root.querySelectorAll('.buffet-select-btn').forEach(btn=>btn.onclick=()=>{
+      const card=btn.closest('[data-exercise-id]'),id=card.dataset.exerciseId,list=buffetDraft(dateValue);
+      const idx=list.indexOf(id);
+      if(idx>=0)list.splice(idx,1);
+      else{
+        if(list.length>=STRENGTH_BUFFET.dailyCount){showToast('1日は'+STRENGTH_BUFFET.dailyCount+'種目までです');return;}
+        const current=buffetCounts(dateValue,existing);
+        if((current[id]||0)>=Number(quotas[id]||0)){showToast('この種目は今週の必要回数を達成済みです');return;}
+        list.push(id);
+      }
+      saveBuffetDrafts();
       renderTodayWorkoutInline();
-    }));
-
-    bindExerciseCardInteractions(root,()=>{
-      renderTodayWorkoutInline();
-      renderCatalogProgram();
-      renderExercises();
-      renderWeightGoals();
-      renderTrainingModes();
     });
-    root.querySelectorAll('.today-program-exercise-summary:not(:disabled)').forEach(btn=>btn.onclick=()=>{
-      const id=btn.closest('.today-program-exercise-card').dataset.exerciseId;
+    bindExerciseCardInteractions(root,()=>{renderTodayWorkoutInline();renderCatalogProgram();renderExercises();renderTrainingModes();});
+    root.querySelectorAll('.buffet-exercise-summary').forEach(btn=>btn.onclick=()=>{
+      const id=btn.closest('[data-exercise-id]').dataset.exerciseId;
       ui.openTodayExercise=ui.openTodayExercise===id?null:id;
-      saveUi();
-      renderTodayWorkoutInline();
+      saveUi();renderTodayWorkoutInline();
     });
     renderTodayCompletionState();
   }
+
   function renderCatalogProgram(){
     const title=document.querySelector('#catalogProgramTitle');
     const grid=document.querySelector('#catalogProgramGrid');
+    const total=document.querySelector('#buffetWeeklyTotal');
     if(!title||!grid)return;
-    const defs=activeCatalogProgram();
-    title.textContent='週'+(Number(state.programMode)===4?'4':'5')+'メニュー';
-    const selectedKey=recommendedKey();
-    grid.innerHTML=defs.map(day=>{
-      const dayOpen=ui.openProgramDay===day.key;
-      const cards=dayOpen?day.items.map(([id])=>{
-        const e=exerciseById(id);if(!e)return '';
-        const t=targets[id],key=day.key+':'+id,open=ui.openProgramExercise===key;
-        const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
-        return '<article class="simple-exercise catalog-program-exercise-card '+(open?'open':'')+'" data-exercise-id="'+id+'" data-program-exercise="'+key+'">'+
-          '<button type="button" class="simple-exercise-summary catalog-program-exercise-summary">'+
-            '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
-            '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
-          '</button>'+
-          (open?exerciseEditorHtml(e,t):'')+
-        '</article>';
-      }).join(''):'';
-      return '<article class="catalog-day '+(day.key===selectedKey?'selected-today ':'')+(dayOpen?'open':'')+'">'+
-        '<button type="button" class="catalog-day-toggle" data-program-day="'+day.key+'"><div class="catalog-day-head"><span class="plan-code">'+esc(day.code)+'</span><h3>'+esc(day.title)+'</h3><p>'+esc(day.desc)+'</p></div><span class="day-fold-indicator">'+(dayOpen?'▲':'▼')+'</span></button>'+
-        (dayOpen?'<div class="catalog-day-exercises">'+cards+'</div>':'')+
-      '</article>';
-    }).join('');
-
-    grid.querySelectorAll('[data-program-day]').forEach(btn=>btn.onclick=()=>{
-      const key=btn.dataset.programDay;
-      ui.openProgramDay=ui.openProgramDay===key?null:key;
-      ui.openProgramExercise=null;saveUi();renderCatalogProgram();
-    });
-    bindExerciseCardInteractions(grid,()=>{renderCatalogProgram();renderExercises();renderWeightGoals();renderTrainingModes();});
-    grid.querySelectorAll('.catalog-program-exercise-summary').forEach(btn=>btn.onclick=()=>{
-      const card=btn.closest('[data-program-exercise]');
-      const key=card.dataset.programExercise;
-      ui.openProgramExercise=ui.openProgramExercise===key?null:key;
-      saveUi();renderCatalogProgram();
-    });
+    const dateValue=currentBuffetDate(),counts=buffetCounts(dateValue),quotas=buffetQuotaMap();
+    title.textContent='週'+state.programMode+'日 · 1日'+STRENGTH_BUFFET.dailyCount+'種目';
+    if(total)total.textContent='週 '+buffetWeeklyTotal()+'枠';
+    grid.innerHTML='<div class="buffet-program-note"><strong>ビュッフェ方式</strong><p>その日の体調に合わせて'+STRENGTH_BUFFET.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
+      '<div class="buffet-quota-grid">'+buffetPool().map(e=>{
+        const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
+        return '<article class="buffet-quota-card '+(done>=quota?'done':'')+'">'+
+          '<div>'+badge(e)+'<strong>'+esc(e.name)+'</strong></div>'+
+          '<span>'+esc(buffetPrescription(e))+'</span><b>週 '+done+' / '+quota+'回</b></article>';
+      }).join('')+'</div>';
   }
 
   function exerciseGoal(def){
