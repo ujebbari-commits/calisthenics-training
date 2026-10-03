@@ -9,6 +9,8 @@
   const WEIGHT_ACHIEVEMENT_KEY='training.weightAchievements.v1';
   const EXERCISE_MODE_KEY='training.exerciseModes.v1';
   const TODAY_ADJUSTMENTS_KEY='training.todayAdjustments.v1';
+  const BUFFET_DRAFTS_KEY='training.strengthBuffetDrafts.v1';
+  const PROGRAM_PREF_VERSION_KEY='training.strengthBuffetProgramVersion';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
@@ -19,14 +21,14 @@
     {id:'hip_abductor',goalKg:70,name:'ヒップアブダクター',desc:'脚を外側へ開いてお尻の横側を鍛える。',muscle:'legs',label:'臀部',weight:true,reps:'12'},
     {id:'hip_adductor',goalKg:70,name:'ヒップアダクター',desc:'脚を内側へ閉じて内ももを鍛える。',muscle:'legs',label:'内もも',weight:true,reps:'12'},
     {id:'ab_crunch',goalKg:55,name:'アブドミナル',desc:'座って上体を丸め、腹筋を鍛えるマシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
-    {id:'ab_roller',name:'アブローラー',desc:'膝コロを基本に、腹筋で体幹を固定しながらローラーを前へ転がして戻す。腰が反らない範囲で行う。',muscle:'core',label:'腹',weight:false,reps:'8–12',defaultSets:3},
+    {id:'ab_roller',name:'アブローラー',desc:'膝コロを基本に、腹筋で体幹を固定しながらローラーを前へ転がして戻す。腰が反らない範囲で行う。',muscle:'core',label:'腹',weight:false,reps:'12',defaultSets:3},
     {id:'rotary_torso',goalKg:45,name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
     {id:'lat_pulldown',goalKg:60,name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引いて背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'dead_hang',goalMetric:60,name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,metricLabel:'時間',unit:'秒',reps:'20–40秒'},
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（高重量）',desc:'低回数・高重量で行うバーベルベンチプレス。4〜6回×3セットを基本にし、重量Lvは5回×3セットを正しいフォームで達成した重量から判定する。セーフティを設定し、限界挑戦時はスポッターを使う。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:3,qualifyReps:5,qualifySets:3},
+    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（5×5）',desc:'筋力向上のメイン種目。5回×5セットを基本にし、重量Lvも5回×5セットを正しいフォームで達成した重量から判定する。セーフティを設定し、無理な失敗レップは避ける。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:5,qualifyReps:5,qualifySets:5},
     {id:'shoulder_press',goalKg:40,name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'seated_row',goalKg:60,name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'chest_supported_row',goalKg:70,name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
@@ -44,39 +46,25 @@
     {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
-  const catalogPrograms={
-    4:[
-      {key:'A',code:'LOWER A',title:'Lower A · 脚 / 体幹 / 跳躍',desc:'脚の基礎筋力と体幹を鍛え、最後まで質を落としにくい順番にした日。',items:[
-        ['vertical_jump','main'],['linear_leg_press','main'],['ab_roller','core'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_press_calf_raise','accessory']
-      ]},
-      {key:'B',code:'CHEST + BICEPS A',title:'Chest + Biceps A · 胸 / 二頭 / 握力',desc:'胸を優先しつつ、間に二頭・背中・握力を挟んで押す筋肉の連続疲労を抑える日。',items:[
-        ['heavy_bench_press','main'],['biceps_machine','accessory'],['chest_supported_row','secondary'],['dead_hang','accessory'],['pec_fly','secondary'],['lateral_raise','accessory']
-      ]},
-      {key:'C',code:'LOWER B',title:'Lower B · 脚 / 体幹 / 跳躍',desc:'別パターンで脚と体幹を鍛え、将来のジャンプ・切り返し動作の土台を作る日。',items:[
-        ['vertical_jump','main'],['seated_leg_press','main'],['ab_crunch','core'],['leg_extension','secondary'],['back_extension','accessory'],['leg_press_calf_raise','accessory']
-      ]},
-      {key:'D',code:'CHEST + BICEPS B',title:'Chest + Biceps B · 胸 / 二頭 / 握力',desc:'胸・二頭・握力を2回目に刺激し、背中も必要量だけ入れて上半身のバランスを保つ日。',items:[
-        ['chest_press','main'],['lat_pulldown','main'],['biceps_machine','accessory'],['dead_hang','accessory'],['pec_fly','secondary'],['rear_delt','accessory']
-      ]}
-    ],
-    5:[
-      {key:'A',code:'LOWER STRENGTH',title:'Lower Strength · 脚 / 体幹 / 跳躍',desc:'脚の基礎筋力を主軸に、ジャンプと体幹をフレッシュな状態で鍛える日。',items:[
-        ['vertical_jump','main'],['linear_leg_press','main'],['ab_roller','core'],['seated_leg_curl','main'],['rotary_torso','core'],['leg_press_calf_raise','accessory']
-      ]},
-      {key:'B',code:'CHEST + BICEPS A',title:'Chest + Biceps A · 胸 / 二頭 / 握力',desc:'胸を優先しながら二頭・背中・握力を交互に挟み、前肩と三頭の累積疲労を抑える日。',items:[
-        ['heavy_bench_press','main'],['biceps_machine','accessory'],['chest_supported_row','secondary'],['dead_hang','accessory'],['pec_fly','secondary'],['lateral_raise','accessory']
-      ]},
-      {key:'C',code:'ATHLETIC BASE',title:'Athletic Base · 体幹 / 股関節 / 有酸素',desc:'上半身を休ませながら、バスケ・バレー復帰に向けた体幹・股関節・基礎持久力を鍛える軽めの日。',items:[
-        ['treadmill','main'],['ab_crunch','core'],['hip_abductor','accessory'],['back_extension','accessory'],['hip_adductor','accessory'],['rotary_torso','core']
-      ]},
-      {key:'D',code:'LOWER POWER',title:'Lower Power · 脚 / 体幹 / 跳躍',desc:'跳躍の質を先に確保し、その後に脚の筋力と体幹を鍛える日。',items:[
-        ['vertical_jump','main'],['seated_leg_press','main'],['ab_roller','core'],['leg_extension','secondary'],['seated_leg_curl','main'],['leg_press_calf_raise','accessory']
-      ]},
-      {key:'E',code:'CHEST + BICEPS B',title:'Chest + Biceps B · 胸 / 二頭 / 握力',desc:'上半身の2回目。胸・二頭・握力を優先し、背中と肩後部を必要量だけ入れる日。',items:[
-        ['chest_press','main'],['lat_pulldown','main'],['biceps_machine','accessory'],['dead_hang','accessory'],['pec_fly','secondary'],['rear_delt','accessory']
-      ]}
-    ]
+  const STRENGTH_BUFFET={
+    dailyCount:6,
+    quotas:{
+      5:{
+        heavy_bench_press:3,linear_leg_press:2,seated_leg_press:1,seated_leg_curl:2,leg_extension:1,leg_press_calf_raise:2,
+        lat_pulldown:2,chest_supported_row:2,biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,
+        rotary_torso:1,back_extension:1,lateral_raise:1,rear_delt:1,vertical_jump:2,hip_abductor:1
+      },
+      4:{
+        heavy_bench_press:3,linear_leg_press:2,seated_leg_curl:2,leg_press_calf_raise:1,lat_pulldown:2,chest_supported_row:2,
+        biceps_machine:2,dead_hang:2,ab_crunch:2,ab_roller:2,rotary_torso:1,back_extension:1,lateral_raise:1,vertical_jump:1
+      }
+    }
   };
+  const makeBuffetSlots=count=>Array.from({length:count},(_,i)=>({
+    key:String.fromCharCode(65+i),code:'BUFFET '+(i+1),title:'Strength Buffet',
+    desc:'体調を見て週の残り枠から'+STRENGTH_BUFFET.dailyCount+'種目を選ぶ。',items:[]
+  }));
+  const catalogPrograms={4:makeBuffetSlots(4),5:makeBuffetSlots(5)};
   function exerciseById(id){return exercises.find(e=>e.id===id)}
   function activeCatalogProgram(){return catalogPrograms[Number(state.programMode)===4?4:5]}
   const exercisePartFilters=[
@@ -125,6 +113,7 @@
   const weightAchievements=read(WEIGHT_ACHIEVEMENT_KEY,{});
   const exerciseModes=read(EXERCISE_MODE_KEY,{});
   const todayAdjustments=read(TODAY_ADJUSTMENTS_KEY,{});
+  const buffetDrafts=read(BUFFET_DRAFTS_KEY,{});
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
@@ -137,6 +126,19 @@
   const saveWeightAchievements=()=>localStorage.setItem(WEIGHT_ACHIEVEMENT_KEY,JSON.stringify(weightAchievements));
   const saveExerciseModes=()=>localStorage.setItem(EXERCISE_MODE_KEY,JSON.stringify(exerciseModes));
   const saveTodayAdjustments=()=>localStorage.setItem(TODAY_ADJUSTMENTS_KEY,JSON.stringify(todayAdjustments));
+  const saveBuffetDrafts=()=>localStorage.setItem(BUFFET_DRAFTS_KEY,JSON.stringify(buffetDrafts));
+  if(Number(localStorage.getItem(PROGRAM_PREF_VERSION_KEY)||0)<1){
+    const quotaIds=new Set([...Object.keys(STRENGTH_BUFFET.quotas[5]),...Object.keys(STRENGTH_BUFFET.quotas[4])]);
+    quotaIds.forEach(id=>{
+      const def=exerciseById(id),target=targets[id];
+      if(!def||!target)return;
+      if(id==='heavy_bench_press'){target.reps='5';target.sets=5;}
+      else if(id==='vertical_jump'){target.reps='5';target.sets=3;}
+      else if(id==='dead_hang'){target.sets=3;}
+      else{target.reps='12';target.sets=3;}
+    });
+    localStorage.setItem(PROGRAM_PREF_VERSION_KEY,'1');
+  }
   saveTargets();
 
   const automaticRecommendedKey=typeof recommendedKey==='function'?recommendedKey:null;
