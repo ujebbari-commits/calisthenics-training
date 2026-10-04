@@ -38,7 +38,7 @@
     {id:'lateral_raise',goalKg:30,name:'ラテラルレイズ',desc:'腕を横へ上げて肩の横側を鍛えるマシン。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'assisted_dip',name:'アシスト・ディップ',desc:'補助付きディップ。胸・三頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'chest',label:'胸・三頭',weight:true,weightLabel:'補助重量',goalDirection:'down',reps:'12'},
     {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'back',label:'背中・二頭',weight:true,weightLabel:'補助重量',goalDirection:'down',reps:'12'},
-    {id:'biceps_machine',goalKg:45,name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
+    {id:'biceps_machine',goalKg:47.5,name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
     {id:'triceps_machine',goalKg:40,name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
     {id:'treadmill',goalMetric:30,name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'cross_trainer',goalMetric:30,name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
