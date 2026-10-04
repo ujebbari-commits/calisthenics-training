@@ -44,6 +44,7 @@
     {id:'recumbent_bike',goalMetric:30,name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'upright_bike',goalMetric:30,name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'},
+    {id:'deadlift',name:'デッドリフト',desc:'床からバーベルを持ち上げる全身の高負荷種目。脚・臀部・ハムストリング・背中・握力を使う。フォームを優先し、失敗レップまで追い込まない。',muscle:'back',label:'背面・脚',weight:true,reps:'5',defaultSets:3},
     {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
@@ -67,6 +68,7 @@
       ab_roller:2,
       rotary_torso:1,
       back_extension:1,
+      deadlift:1,
       lateral_raise:1,
       rear_delt:1,
       pec_fly:1,
