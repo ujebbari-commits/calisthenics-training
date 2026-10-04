@@ -12,18 +12,19 @@
   const BUFFET_DRAFTS_KEY='training.strengthBuffetDrafts.v1';
   const PROGRAM_PREF_VERSION_KEY='training.strengthBuffetProgramVersion';
   const FLEX_PLAN_PREF_KEY='training.flexStrengthPlan.v1';
+  const LEVEL_CALIBRATION_VERSION_KEY='training.levelCalibration.v2';
 
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
     {id:'linear_leg_press',goalKg:160,name:'リニアレッグプレス',desc:'プレートロード式のレッグプレス。市ヶ谷店フリーウェイトエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
-    {id:'leg_press_calf_raise',goalKg:120,name:'レッグプレス・カーフレイズ',desc:'レッグプレスで膝をほぼ固定し、足首だけを動かしてふくらはぎを鍛える。足の前半分をプレートに置き、かかとを下げてからつま先で押す。',muscle:'legs',label:'ふくらはぎ',weight:true,reps:'12'},
+    {id:'leg_press_calf_raise',goalKg:170,name:'レッグプレス・カーフレイズ',desc:'レッグプレスで膝をほぼ固定し、足首だけを動かしてふくらはぎを鍛える。足の前半分をプレートに置き、かかとを下げてからつま先で押す。',muscle:'legs',label:'ふくらはぎ',weight:true,reps:'12'},
     {id:'leg_extension',goalKg:60,name:'レッグ・エクステンション',desc:'膝を伸ばして太ももの前側を鍛える。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
-    {id:'seated_leg_curl',goalKg:50,name:'シーテッド・レッグ・カール',desc:'座って膝を曲げ、太ももの裏側を鍛える。',muscle:'legs',label:'ハム',weight:true,reps:'12'},
+    {id:'seated_leg_curl',goalKg:75,name:'シーテッド・レッグ・カール',desc:'座って膝を曲げ、太ももの裏側を鍛える。',muscle:'legs',label:'ハム',weight:true,reps:'12'},
     {id:'hip_abductor',goalKg:70,name:'ヒップアブダクター',desc:'脚を外側へ開いてお尻の横側を鍛える。',muscle:'legs',label:'臀部',weight:true,reps:'12'},
     {id:'hip_adductor',goalKg:70,name:'ヒップアダクター',desc:'脚を内側へ閉じて内ももを鍛える。',muscle:'legs',label:'内もも',weight:true,reps:'12'},
-    {id:'ab_crunch',goalKg:55,name:'アブドミナル',desc:'座って上体を丸め、腹筋を鍛えるマシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
+    {id:'ab_crunch',goalKg:80,name:'アブドミナル',desc:'座って上体を丸め、腹筋を鍛えるマシン。',muscle:'core',label:'腹',weight:true,reps:'12'},
     {id:'ab_roller',name:'アブローラー',desc:'膝コロを基本に、腹筋で体幹を固定しながらローラーを前へ転がして戻す。腰が反らない範囲で行う。',muscle:'core',label:'腹',weight:false,reps:'12',defaultSets:3},
-    {id:'rotary_torso',goalKg:45,name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
+    {id:'rotary_torso',goalKg:120,name:'トーソ・ローテーション',desc:'体幹を固定しながら左右へ回旋して脇腹を鍛える。',muscle:'obliques',label:'脇腹',weight:true,reps:'12'},
     {id:'lat_pulldown',goalKg:60,name:'ラットプルダウン',desc:'頭上のバーを胸方向へ引いて背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'dead_hang',goalMetric:60,name:'デッドハング',desc:'バーにぶら下がって保持。',muscle:'grip',label:'握力',weight:false,metricLabel:'時間',unit:'秒',reps:'20–40秒'},
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
@@ -37,7 +38,7 @@
     {id:'lateral_raise',goalKg:30,name:'ラテラルレイズ',desc:'腕を横へ上げて肩の横側を鍛えるマシン。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'assisted_dip',name:'アシスト・ディップ',desc:'補助付きディップ。胸・三頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'chest',label:'胸・三頭',weight:true,weightLabel:'補助重量',goalDirection:'down',reps:'12'},
     {id:'assisted_chin',name:'アシスト・チンニング',desc:'補助付き懸垂。背中・二頭筋を鍛える。補助重量は大きいほど軽くなる。',muscle:'back',label:'背中・二頭',weight:true,weightLabel:'補助重量',goalDirection:'down',reps:'12'},
-    {id:'biceps_machine',goalKg:30,name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
+    {id:'biceps_machine',goalKg:45,name:'バイセップス',desc:'肘を曲げて上腕二頭筋を鍛えるマシン。',muscle:'arms',label:'二頭',weight:true,reps:'12'},
     {id:'triceps_machine',goalKg:40,name:'トライセップス',desc:'肘を伸ばして上腕三頭筋を鍛えるマシン。',muscle:'arms',label:'三頭',weight:true,reps:'12'},
     {id:'treadmill',goalMetric:30,name:'トレッドミル',desc:'ランニング／ウォーキング用。有酸素マシン。市ヶ谷店は8台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'cross_trainer',goalMetric:30,name:'クロストレーナー',desc:'腕と脚を連動させる低衝撃の有酸素マシン。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
@@ -155,6 +156,18 @@
   const saveTodayAdjustments=()=>localStorage.setItem(TODAY_ADJUSTMENTS_KEY,JSON.stringify(todayAdjustments));
   const saveBuffetDrafts=()=>localStorage.setItem(BUFFET_DRAFTS_KEY,JSON.stringify(buffetDrafts));
   const saveFlexPlanPrefs=()=>localStorage.setItem(FLEX_PLAN_PREF_KEY,JSON.stringify(flexPlanPrefs));
+  if(Number(localStorage.getItem(LEVEL_CALIBRATION_VERSION_KEY)||0)<2){
+    const recalibratedIds=['leg_press_calf_raise','seated_leg_curl','ab_crunch','rotary_torso','biceps_machine'];
+    recalibratedIds.forEach(id=>{
+      exerciseModes[id]=1;
+      delete weightGoals[id];
+      Object.keys(weightAchievements).forEach(key=>{if(key===id||key.startsWith(id+':m'))delete weightAchievements[key];});
+    });
+    saveExerciseModes();
+    saveWeightGoals();
+    saveWeightAchievements();
+    localStorage.setItem(LEVEL_CALIBRATION_VERSION_KEY,'2');
+  }
   if(Number(localStorage.getItem(PROGRAM_PREF_VERSION_KEY)||0)<1){
     const quotaIds=new Set(Object.keys(FLEX_STRENGTH_PLAN.baseQuotas));
     quotaIds.forEach(id=>{
