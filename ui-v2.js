@@ -29,7 +29,7 @@
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（5×5）',desc:'筋力向上のメイン種目。5回×5セットを基本にし、重量Lvも5回×5セットを正しいフォームで達成した重量から判定する。セーフティを設定し、無理な失敗レップは避ける。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:5,qualifyReps:5,qualifySets:5},
+    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（5×5）',desc:'筋力向上のメイン種目。5回×5セットを基本にし、Mode 1はLv1=30kgからLv10=80kgまで段階的に進める。重量Lvは5回×5セットを正しいフォームで達成した重量から判定する。セーフティを設定し、無理な失敗レップは避ける。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:5,qualifyReps:5,qualifySets:5},
     {id:'shoulder_press',goalKg:40,name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'seated_row',goalKg:60,name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'chest_supported_row',goalKg:70,name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
@@ -854,6 +854,10 @@
     return roundToMachineStep(v);
   }
   function levelMilestones(def,goal,mode=1){
+    if(def.id==='heavy_bench_press'&&mode===1&&Number(goal)>30){
+      const start=30;
+      return Array.from({length:10},(_,i)=>roundLevelMilestone(def,start+(Number(goal)-start)*(i/9)));
+    }
     return modePercents(mode).map(p=>roundLevelMilestone(def,goal*p/100));
   }
   function achievedLevel(def,current,goal,mode=1){
