@@ -17,6 +17,7 @@
   const exercises=[
     {id:'seated_leg_press',goalKg:120,name:'シーテッド・レッグプレス',desc:'座ってプレートを押し、椅子側が動くタイプ。市ヶ谷店マシンエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
     {id:'linear_leg_press',goalKg:160,name:'リニアレッグプレス',desc:'プレートロード式のレッグプレス。市ヶ谷店フリーウェイトエリア。',muscle:'legs',label:'脚',weight:true,reps:'12'},
+    {id:'barbell_squat',goalKg:105,name:'スクワット',desc:'バーベルを担いでしゃがみ、脚と臀部を鍛える。腹圧を保ち、セーフティを設定して8回×3セットを目指す。',muscle:'legs',label:'脚・臀部',weight:true,reps:'8',defaultSets:3,defaultWeightKg:50,qualifyReps:8,qualifySets:3},
     {id:'leg_press_calf_raise',goalKg:170,name:'レッグプレス・カーフレイズ',desc:'レッグプレスで膝をほぼ固定し、足首だけを動かしてふくらはぎを鍛える。足の前半分をプレートに置き、かかとを下げてからつま先で押す。',muscle:'legs',label:'ふくらはぎ',weight:true,reps:'12'},
     {id:'leg_extension',goalKg:60,name:'レッグ・エクステンション',desc:'膝を伸ばして太ももの前側を鍛える。',muscle:'legs',label:'太もも',weight:true,reps:'12'},
     {id:'seated_leg_curl',goalKg:75,name:'シーテッド・レッグ・カール',desc:'座って膝を曲げ、太ももの裏側を鍛える。',muscle:'legs',label:'ハム',weight:true,reps:'12'},
@@ -57,7 +58,7 @@
     baseQuotas:{
       heavy_bench_press:3,
       linear_leg_press:2,
-      seated_leg_press:1,
+      barbell_squat:1,
       seated_leg_curl:2,
       leg_extension:1,
       leg_press_calf_raise:2,
@@ -145,7 +146,7 @@
 
   for(const e of exercises){
     const old=targets[e.id]||legacy[e.id]||{};
-    const migratedReps=(old.reps==='8–12'||old.reps==='8-12')?e.reps:(old.reps||e.reps); targets[e.id]={weight:old.weight??'',reps:migratedReps,sets:Math.max(1,Number(old.sets||e.defaultSets||3))};
+    const migratedReps=(old.reps==='8–12'||old.reps==='8-12')?e.reps:(old.reps||e.reps); targets[e.id]={weight:old.weight??e.defaultWeightKg??'',reps:migratedReps,sets:Math.max(1,Number(old.sets||e.defaultSets||3))};
   }
   const saveTargets=()=>localStorage.setItem(TARGET_KEY,JSON.stringify(targets));
   const saveUi=()=>localStorage.setItem(UI_KEY,JSON.stringify(ui));
@@ -986,7 +987,7 @@
     const dateValue=currentBuffetDate(),counts=buffetCounts(dateValue),quotas=buffetQuotaMap();
     title.textContent='週'+flexPlanPrefs.daysPerWeek+'日 · 1日'+flexPlanPrefs.dailyCount+'種目';
     if(total)total.textContent='週 '+buffetWeeklyTotal()+'枠';
-    grid.innerHTML='<div class="buffet-program-note"><strong>Flex方式</strong><p>その日の体調に合わせて'+flexPlanPrefs.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチプレスだけ5×5、それ以外は原則12×3。</p></div>'+
+    grid.innerHTML='<div class="buffet-program-note"><strong>Flex方式</strong><p>その日の体調に合わせて'+flexPlanPrefs.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチ5×5、スクワット8×3、デッドリフト5×3、その他は原則12×3。</p></div>'+
       '<div class="buffet-quota-grid">'+buffetPool().map(e=>{
         const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
         return '<article class="buffet-quota-card '+(done>=quota?'done':'')+'">'+
