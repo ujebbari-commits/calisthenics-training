@@ -456,6 +456,7 @@
     if(typeof renderAll==='function')renderAll();
     renderCatalogProgram();
     renderTrainingModes();
+    renderFlexPlanHeader();
     renderFlexPlanStats();
     input.value=localDateValue();
     renderTodayWorkoutInline();
@@ -809,7 +810,13 @@
     root.querySelectorAll('.detail-exercise-record').forEach(btn=>btn.onclick=e=>{e.stopPropagation();openBig3DetailDialog(btn.closest('.simple-exercise').dataset.exerciseId);});
     root.querySelectorAll('.save-exercise-record').forEach(btn=>btn.onclick=e=>{
       e.stopPropagation();
-      saveExerciseRecord(btn.closest('.simple-exercise'));
+      const box=btn.closest('.simple-exercise'),id=box.dataset.exerciseId;
+      box.querySelectorAll('.simple-editor input[data-field]').forEach(inp=>{
+        if(inp.dataset.field==='sets')targets[id].sets=Math.max(1,Number(inp.value||1));
+        else targets[id][inp.dataset.field]=inp.value;
+      });
+      saveTargets();
+      saveExerciseRecord(box);
       rerender?.();
     });
     root.querySelectorAll('.simple-editor input').forEach(inp=>inp.oninput=()=>{
@@ -1025,7 +1032,7 @@
               '<div><strong>'+esc(fixedExerciseName(e.id))+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
             '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(fixedPrescription(item))+'</span><span>休憩 '+fixedRest(item)+'</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
           '</button>'+
-          (open?exerciseEditorHtml(e,t):'')+
+          (open?exerciseEditorHtml(e,{...t,sets:item[2],reps:item[3]||t.reps}):'')+
         '</article>';
       }).join('')+'</div>'+
       '<div class="fixed-training-outro">最後：ストレッチ5分</div>';
