@@ -1061,7 +1061,7 @@
         return '<details class="fixed-program-day" '+(day.key===selectedFixedDay().key?'open':'')+'>'+
           '<summary><strong>'+esc(day.title)+'</strong><span>'+esc(day.minutes)+(done.has(day.key)?' · 完了':'')+'</span></summary>'+
           '<p>'+esc(day.desc)+'</p><ol>'+
-          day.items.map(item=>'<li><span>'+esc(fixedExerciseName(item[0]))+'</span><strong>'+esc(fixedPrescription(item))+'</strong><small>休憩 '+fixedRest(item)+'</small></li>').join('')+
+          day.items.map((item,i)=>'<li><span class="fixed-order">'+(i+1)+'</span><span>'+esc(fixedExerciseName(item[0]))+'</span><strong>'+esc(fixedPrescription(item))+'</strong><small>休憩 '+fixedRest(item)+'</small></li>').join('')+
           '</ol></details>';
       }).join('')+
       '<div class="fixed-program-rules"><strong>重量の進め方</strong><p>その週の全セット・全レップを正しいフォームで完遂したら、翌週ベンチ・スクワット＋2.5kg、デッド＋2.5〜5kg。レップ低下・フォーム崩れなら維持。2週連続で低下したら約10%下げて積み直す。Day 5のベンチも同じ重量。</p><p>肩前部に違和感があればまずペックフライを減らす。腰の疲労が抜けなければデッド週3回のうち1回を軽くする。</p></div>';
@@ -1398,14 +1398,14 @@
     .fixed-day-picker>span{font-size:.76rem;color:var(--accent);font-weight:800}.fixed-training-intro,.fixed-training-outro{padding:10px 12px;color:var(--muted);font-size:.78rem}
     .fixed-order{color:var(--muted);font-size:.85rem;font-weight:900;min-width:16px}
     .fixed-program-day{border:1px solid var(--line);border-radius:12px;background:var(--surface2);overflow:hidden}.fixed-program-day summary{list-style:none;cursor:pointer;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}.fixed-program-day summary::-webkit-details-marker{display:none}
-    .fixed-program-day summary strong{color:var(--accent)}.fixed-program-day summary span{font-size:.75rem;color:var(--muted)}.fixed-program-day p{padding:0 14px;color:var(--muted);font-size:.8rem}.fixed-program-day ol{margin:0;padding:0 14px 14px 34px}.fixed-program-day li{padding:6px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:.84rem}.fixed-program-day li small{color:var(--muted)}.fixed-program-day li strong{white-space:nowrap}
+    .fixed-program-day summary strong{color:var(--accent)}.fixed-program-day summary span{font-size:.75rem;color:var(--muted)}.fixed-program-day p{padding:0 14px;color:var(--muted);font-size:.8rem}.fixed-program-day ol{margin:0;padding:0 14px 14px 34px}.fixed-program-day li{padding:6px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:.84rem}.fixed-program-day li small{color:var(--muted)}.fixed-program-day li strong{white-space:nowrap}
     .fixed-program-rules{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.fixed-program-rules p{margin:6px 0 0;color:var(--muted);font-size:.82rem}
     .big3-detail-dialog{border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--text);width:min(560px,calc(100vw - 24px));max-height:90vh;overflow-y:auto;padding:20px;box-sizing:border-box}.big3-detail-dialog::backdrop{background:rgba(0,0,0,.75)}
     .big3-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.big3-detail-head h2{margin:4px 0}.big3-detail-head p{margin:0;color:var(--muted);font-size:.78rem}.big3-detail-close{border:0;background:var(--surface3);color:var(--text);border-radius:9px;padding:7px 12px;font-size:1.2rem}
     .big3-detail-note{font-size:.79rem;color:var(--muted);line-height:1.5}.big3-detail-list{display:grid;gap:9px}.big3-detail-row{display:grid;grid-template-columns:74px minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:11px}.big3-detail-row>strong{align-self:center;font-size:.83rem}
     .big3-detail-row label{display:grid;gap:5px;font-size:.7rem;color:var(--muted)}.big3-detail-row input{width:100%;min-width:0;box-sizing:border-box;padding:9px 6px;font-size:1rem}.big3-detail-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px}
     .big3-detail-error{color:var(--danger);font-size:.76rem;min-height:1em}.big3-history-detail{margin-top:5px;font-size:.78rem}.big3-history-detail summary{cursor:pointer;color:var(--accent)}.big3-history-detail ol{margin:6px 0 0;padding-left:20px}.exercise-history-description{font-size:.8rem;color:var(--muted)}
-    @media(max-width:700px){.fixed-program-day li{grid-template-columns:minmax(0,1fr) auto}.fixed-program-day li small{grid-column:1/-1}.big3-detail-dialog{padding:14px}.big3-detail-row{grid-template-columns:60px 1fr 1fr;gap:6px}.big3-detail-actions>*{flex:1}}
+    @media(max-width:700px){.fixed-program-day li{grid-template-columns:20px minmax(0,1fr) auto}.fixed-program-day li small{grid-column:2/-1}.big3-detail-dialog{padding:14px}.big3-detail-row{grid-template-columns:60px 1fr 1fr;gap:6px}.big3-detail-actions>*{flex:1}}
 
     .ui-redundant,.legacy-training-level-hidden{display:none!important}
     .app-section-hidden{display:none!important}
