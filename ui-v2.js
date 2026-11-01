@@ -31,7 +31,7 @@
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス（5×5）',desc:'筋力向上のメイン種目。5回×5セットを基本にし、Mode 1はLv1=30kgからLv10=80kgまで段階的に進める。重量Lvは5回×5セットを正しいフォームで達成した重量から判定する。セーフティを設定し、無理な失敗レップは避ける。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:5,qualifyReps:5,qualifySets:5},
+    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス',desc:'週5回。Day 1〜4はアップ1＋4×5、Day 5はアップ1＋3×5。休憩4分。セーフティを使い、フォームを優先する。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:4,qualifyReps:5,qualifySets:4},
     {id:'shoulder_press',goalKg:40,name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'seated_row',goalKg:60,name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'chest_supported_row',goalKg:70,name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
@@ -78,6 +78,52 @@
       shoulder_press:1
     }
   };
+
+  // Fixed Day 1-5 prescription transcribed from the user's weekly program.
+  // [exerciseId, role, workingSets, plannedReps|null, restMinutes, warmup]
+  const FIXED_FIVE_DAY_PLAN=[
+    {key:'A',code:'DAY 1',title:'Day 1 · ベンチ＋スクワット',minutes:'約2時間6分',desc:'ベンチ→スクワット→水平ロー→補助→腹筋・カーフ',items:[
+      ['heavy_bench_press','main',4,5,4,true],['barbell_squat','main',3,8,4,true],
+      ['seated_row','secondary',3,null,2,false],['lateral_raise','accessory',3,null,2,false],
+      ['leg_extension','accessory',3,null,2,false],['biceps_machine','accessory',3,null,2,false],
+      ['ab_crunch','core',3,null,2,false],['leg_press_calf_raise','accessory',3,null,2,false]
+    ]},
+    {key:'B',code:'DAY 2',title:'Day 2 · ベンチ＋デッドリフト',minutes:'約2時間6分',desc:'デッドの日は縦引き（ラットプルダウン）',items:[
+      ['heavy_bench_press','main',4,5,4,true],['deadlift','main',3,5,4,true],
+      ['lat_pulldown','secondary',3,null,2,false],['lateral_raise','accessory',3,null,2,false],
+      ['leg_extension','accessory',3,null,2,false],['pec_fly','accessory',3,null,2,false],
+      ['ab_crunch','core',3,null,2,false],['leg_press_calf_raise','accessory',3,null,2,false]
+    ]},
+    {key:'C',code:'DAY 3',title:'Day 3 · ベンチ＋スクワット',minutes:'約2時間6分',desc:'ベンチ→スクワット→水平ロー→補助→腹筋・カーフ',items:[
+      ['heavy_bench_press','main',4,5,4,true],['barbell_squat','main',3,8,4,true],
+      ['seated_row','secondary',3,null,2,false],['lateral_raise','accessory',3,null,2,false],
+      ['leg_extension','accessory',3,null,2,false],['pec_fly','accessory',3,null,2,false],
+      ['ab_crunch','core',3,null,2,false],['leg_press_calf_raise','accessory',3,null,2,false]
+    ]},
+    {key:'D',code:'DAY 4',title:'Day 4 · ベンチ＋デッドリフト',minutes:'約2時間6分',desc:'デッドの日は腰を支えられるアイソラテラルロー（水平タイプ）',items:[
+      ['heavy_bench_press','main',4,5,4,true],['deadlift','main',3,5,4,true],
+      ['chest_supported_row','secondary',3,null,2,false],['lateral_raise','accessory',3,null,2,false],
+      ['seated_leg_curl','accessory',3,null,2,false],['biceps_machine','accessory',3,null,2,false],
+      ['ab_crunch','core',3,null,2,false],['leg_press_calf_raise','accessory',3,null,2,false]
+    ]},
+    {key:'E',code:'DAY 5',title:'Day 5 · BIG3 3種目',minutes:'約2時間3分',desc:'ベンチ3×5。スクワットをデッドより先に行い、休養日前を推奨',items:[
+      ['heavy_bench_press','main',3,5,4,true],['barbell_squat','main',3,8,4,true],
+      ['deadlift','main',3,5,4,true],['lat_pulldown','secondary',3,null,2,false],
+      ['pec_fly','accessory',3,null,2,false],['ab_crunch','core',3,null,2,false],
+      ['leg_press_calf_raise','accessory',3,null,2,false]
+    ]}
+  ];
+  const BIG3_IDS=new Set(['heavy_bench_press','barbell_squat','deadlift']);
+  function fixedDayByKey(key){return FIXED_FIVE_DAY_PLAN.find(d=>d.key===key)||FIXED_FIVE_DAY_PLAN[0];}
+  function fixedPrescription(item){
+    return (item[5]?'アップ1＋':'')+item[2]+(item[3]?'×'+item[3]:'セット');
+  }
+  function fixedRest(item){return (item[1]==='core'||item[0]==='leg_press_calf_raise')?'2分以下':item[4]+'分';}
+  function fixedExerciseName(id){
+    if(id==='seated_row')return 'ロー（水平）';
+    return exerciseById(id)?.name||id;
+  }
+
   function makeFlexSlots(count){
     return Array.from({length:count},(_,i)=>({
       key:String.fromCharCode(65+i),
@@ -89,7 +135,7 @@
   }
 
   function exerciseById(id){return exercises.find(e=>e.id===id)}
-  function activeCatalogProgram(){return makeFlexSlots(flexPlanPrefs.daysPerWeek)}
+  function activeCatalogProgram(){return FIXED_FIVE_DAY_PLAN}
   const exercisePartFilters=[
     ['all','すべて'],
     ['chest','胸'],
@@ -181,12 +227,21 @@
     });
     localStorage.setItem(PROGRAM_PREF_VERSION_KEY,'1');
   }
+  if(Number(localStorage.getItem('training.fixedFiveDayPreset.v1')||0)<1){
+    targets.heavy_bench_press.sets=4;
+    targets.heavy_bench_press.reps='5';
+    targets.barbell_squat.sets=3;
+    targets.barbell_squat.reps='8';
+    targets.deadlift.sets=3;
+    targets.deadlift.reps='5';
+    localStorage.setItem('training.fixedFiveDayPreset.v1','1');
+  }
   saveTargets();
 
   const automaticRecommendedKey=typeof recommendedKey==='function'?recommendedKey:null;
   recommendedKey=function(){
     const keys=activeCatalogProgram().map(x=>x.key);
-    if(ui.todayMenuKey&&keys.includes(ui.todayMenuKey))return ui.todayMenuKey;
+    if(ui.fixedDayKey&&keys.includes(ui.fixedDayKey))return ui.fixedDayKey;
     const auto=automaticRecommendedKey?automaticRecommendedKey():keys[0];
     return keys.includes(auto)?auto:keys[0];
   };
@@ -350,8 +405,23 @@
           '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(t.reps)+'</span><span>'+t.sets+' set</span></div>'+
         '</div>'+exerciseEditorHtml(e,t)+'</article></div>';
   }
-  function completionRecord(dateValue){
-    return buffetRecordForDate(dateValue);
+
+  function isFixedPlanRecord(h){return h?.completedVia==='fixed-five-day-plan';}
+  function fixedDayRecord(dateValue,key){
+    const week=mondayKey(dateValue);
+    return (state.history||[]).find(h=>isFixedPlanRecord(h)&&h.fixedDayKey===key&&
+      mondayKey(localDateValue(new Date(h.iso)))===week);
+  }
+  function fixedWeekRecords(dateValue){
+    const week=mondayKey(dateValue);
+    return (state.history||[]).filter(h=>isFixedPlanRecord(h)&&
+      mondayKey(localDateValue(new Date(h.iso)))===week);
+  }
+  function selectedFixedDay(){
+    const key=ui.fixedDayKey;
+    if(FIXED_FIVE_DAY_PLAN.some(d=>d.key===key))return fixedDayByKey(key);
+    const dateValue=currentBuffetDate();
+    return FIXED_FIVE_DAY_PLAN.find(d=>!fixedDayRecord(dateValue,d.key))||FIXED_FIVE_DAY_PLAN[0];
   }
   function renderTodayCompletionState(){
     const input=document.querySelector('#todayCompleteDate');
@@ -360,50 +430,36 @@
     if(!input||!button)return;
     if(!input.value)input.value=localDateValue();
     input.max=localDateValue();
-    const existing=completionRecord(input.value);
-    const selected=buffetDraft(input.value).length;
-    button.textContent=existing?'更新':'完了';
-    button.disabled=selected!==flexPlanPrefs.dailyCount;
-    if(status)status.textContent=(existing?'記録済み · ':'')+'選択 '+selected+'/'+flexPlanPrefs.dailyCount;
+    const day=selectedFixedDay(),existing=fixedDayRecord(input.value,day.key);
+    button.textContent=existing?'完了日を更新':'完了';
+    button.disabled=false;
+    if(status)status.textContent=(existing?'記録済み · ':'未完了 · ')+day.code;
   }
   function completeTodayWorkoutInline(){
     const input=document.querySelector('#todayCompleteDate');
     if(!input?.value)return;
-    const dateValue=input.value;
-    const selected=[...new Set(buffetDraft(dateValue))];
-    if(selected.length!==flexPlanPrefs.dailyCount){
-      showToast('1日'+flexPlanPrefs.dailyCount+'種目を選択してください');
-      return;
-    }
-    const quotas=buffetQuotaMap();
-    const existing=buffetRecordForDate(dateValue);
-    const counts=buffetCounts(dateValue,existing);
-    const over=selected.find(id=>(counts[id]||0)+1>Number(quotas[id]||0));
-    if(over){
-      showToast((exerciseById(over)?.name||over)+'は今週の選択回数に到達しています');
-      return;
-    }
-    const sessionKey=existing?.key||buffetSessionKey(dateValue);
+    const dateValue=input.value,day=selectedFixedDay();
+    const existing=fixedDayRecord(dateValue,day.key);
     const record={
-      iso:selectedDateToIso(dateValue),key:sessionKey,level:state.level,programMode:Number(state.programMode||5),
-      menuTitle:FLEX_STRENGTH_PLAN.name,menuCode:'FLEX',planDays:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,
-      results:existing?.results||[],notes:existing?.notes||'',buffetExerciseIds:selected,completedVia:'flex-strength-plan'
+      iso:selectedDateToIso(dateValue),key:day.key,level:state.level,
+      programMode:5,menuTitle:day.title,menuCode:day.code,
+      fixedDayKey:day.key,completedVia:'fixed-five-day-plan',
+      results:existing?.results||[],notes:existing?.notes||''
     };
-    if(existing)Object.assign(existing,record); else state.history.push(record);
+    if(existing)Object.assign(existing,record);
+    else state.history.push(record);
     state.history.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
     save();
-    delete buffetDrafts[dateValue];
-    saveBuffetDrafts();
     ui.openTodayExercise=null;
+    ui.fixedDayKey=null;
     saveUi();
     if(typeof renderAll==='function')renderAll();
     renderCatalogProgram();
     renderTrainingModes();
-    renderFlexPlanHeader();
     renderFlexPlanStats();
     input.value=localDateValue();
     renderTodayWorkoutInline();
-    showToast(existing?'完了記録を更新しました':'Flex Strength Planを完了しました');
+    showToast(existing?'完了日を更新しました':day.title+'を完了しました');
   }
   function bindTodayCompletionControls(card){
     const date=card.querySelector('#todayCompleteDate');
@@ -411,35 +467,35 @@
     if(date){
       date.value=localDateValue();
       date.max=localDateValue();
-      date.addEventListener('change',()=>{renderTodayCompletionState();renderTodayWorkoutInline();renderCatalogProgram();});
+      date.addEventListener('change',()=>{
+        ui.fixedDayKey=null;saveUi();
+        renderTodayWorkoutInline();renderCatalogProgram();
+      });
     }
     if(button)button.addEventListener('click',completeTodayWorkoutInline);
     renderTodayCompletionState();
   }
-
   function renderFlexPlanHeader(){
     const title=document.querySelector('#todayTitle');
     const summary=document.querySelector('#todaySummary');
     const label=document.querySelector('#todayLabel');
-    if(title)title.textContent=FLEX_STRENGTH_PLAN.name;
-    if(summary)summary.textContent='筋力・筋肥大 · 1日'+flexPlanPrefs.dailyCount+'種目 × 週'+flexPlanPrefs.daysPerWeek+'日 · ベンチプレス週3回 5×5';
-    if(label)label.textContent='FLEX STRENGTH · '+buffetWeeklyTotal()+' WEEKLY SLOTS';
+    if(title)title.textContent='週5回トレーニングプログラム';
+    if(summary)summary.textContent='ベンチ週5回 · スクワット週3回 · デッド週3回 · BIG3は4分休憩';
+    if(label)label.textContent='DAY 1–5 · 筋力＋筋肥大';
   }
   function renderFlexPlanStats(){
-    const week=mondayKey(localDateValue());
-    const records=(state.history||[]).filter(h=>isFlexPlanRecord(h)&&mondayKey(localDateValue(new Date(h.iso)))===week);
+    const dateValue=localDateValue();
+    const records=fixedWeekRecords(dateValue);
     const weekCount=document.querySelector('#weekCount');
-    if(weekCount)weekCount.textContent=records.length+' / '+flexPlanPrefs.daysPerWeek;
-    const weeks=new Set((state.history||[]).filter(isFlexPlanRecord).map(h=>mondayKey(localDateValue(new Date(h.iso)))));
-    let streak=0;
-    const cursor=new Date(week+'T12:00:00');
-    while(weeks.has(localDateValue(cursor))){
-      streak++;
-      cursor.setDate(cursor.getDate()-7);
-    }
+    if(weekCount)weekCount.textContent=new Set(records.map(r=>r.fixedDayKey)).size+' / 5';
+    const weeks=new Set((state.history||[]).filter(isFixedPlanRecord).map(h=>mondayKey(localDateValue(new Date(h.iso)))));
+    let streak=0,cursor=new Date(mondayKey(dateValue)+'T12:00:00');
+    while(weeks.has(localDateValue(cursor))){streak++;cursor.setDate(cursor.getDate()-7);}
     const streakEl=document.querySelector('#streakCount');
     if(streakEl)streakEl.textContent=String(streak);
   }
+
+
   function bindFlexPlanSettings(card){
     const daily=card.querySelector('#flexPlanDailyCount');
     const days=card.querySelector('#flexPlanDaysPerWeek');
@@ -514,7 +570,7 @@
     const catalogProgramCard=document.createElement('section');
     catalogProgramCard.className='card catalog-program-card';
     catalogProgramCard.dataset.appSection='program';
-    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">FLEX STRENGTH PLAN</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
+    catalogProgramCard.innerHTML='<div class="section-head"><div><p class="eyebrow">FIXED 5-DAY PROGRAM</p><h2 id="catalogProgramTitle"></h2></div><span class="pill" id="buffetWeeklyTotal"></span></div><div id="catalogProgramGrid" class="catalog-program-grid"></div>';
     if(level)level.parentNode.insertBefore(catalogProgramCard,level);else shell.appendChild(catalogProgramCard);
 
     if(progress){progress.dataset.appSection='progress';setupExerciseProgress(progress);}
@@ -535,13 +591,12 @@
     const settingsCard=document.createElement('section');
     settingsCard.className='card app-settings-card';
     settingsCard.dataset.appSection='settings';
+
     settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
-      '<div class="flex-plan-settings"><div><strong>Flex Strength Plan</strong><p class="muted">筋力・筋肥大向け。ベンチプレスは週3回5×5、それ以外は原則12×3。週間枠は設定値に合わせて自動配分します。</p></div>'+
-      '<label><span>1日あたりの種目数</span><input id="flexPlanDailyCount" type="number" min="1" max="12" step="1" inputmode="numeric"></label>'+
-      '<label><span>週のトレーニング日数</span><input id="flexPlanDaysPerWeek" type="number" min="3" max="7" step="1" inputmode="numeric"></label>'+
-      '<button type="button" id="saveFlexPlanSettings" class="primary">保存</button><p id="flexPlanSettingsStatus" class="flex-plan-settings-status"></p></div>'+
-      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目設定、Mode/Lv、記録、Flex Strength Planの週間枠を共有用JSONにまとめます。</p></div>'+
+      '<div class="fixed-program-rules"><strong>固定週5日プログラム</strong><p class="muted">全体アップ10分（トレッドミル5分＋動的ストレッチ）、BIG3はアップ1＋本番・休憩4分、補助は休憩2分、最後にストレッチ5分。重量アップは週単位。</p></div>'+
+      '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">種目、5日間のメニュー、詳細セット記録、重量LvをJSONで共有します。</p></div>'+
       '<button type="button" id="shareTrainingDataBtn" class="primary">ChatGPTに共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
+
     shell.appendChild(settingsCard);
 
     const nav=document.createElement('nav');
@@ -578,7 +633,7 @@
     renderExercises();
     renderExerciseHistory();
     renderExerciseProgress();
-    bindFlexPlanSettings(settingsCard);
+    // Fixed program has no editable daily quota settings.
     const shareBtn=document.querySelector('#shareTrainingDataBtn');
     if(shareBtn)shareBtn.onclick=shareTrainingData;
     renderFlexPlanHeader();
@@ -626,13 +681,13 @@
       purpose:'ChatGPTに現在のトレーニングアプリ情報を共有し、今後のメニュー・負荷・進捗相談に利用するためのデータ',
       appState:{
         programMode:Number(state.programMode||4),
-        flexPlan:{name:FLEX_STRENGTH_PLAN.name,daysPerWeek:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount},
-        todayMenuKey:null,
+        fixedPlan:{name:'週5回トレーニングプログラム',daysPerWeek:5,benchDays:5,squatDays:3,deadliftDays:3},
+        todayMenuKey:selectedFixedDay().key,
         level:state.level??null,
         unlockedLevel:state.unlockedLevel??null
       },
-      weeklyProgram:{type:'flex-strength-plan',goal:'strength-and-hypertrophy',days:flexPlanPrefs.daysPerWeek,dailyExerciseCount:flexPlanPrefs.dailyCount,weeklyQuotas:buffetQuotaMap(),weeklyTotal:buffetWeeklyTotal()},
-      currentWeekExerciseCounts:buffetCounts(localDateValue()),
+      weeklyProgram:{type:'fixed-five-day-plan',goal:'strength-and-hypertrophy',days:FIXED_FIVE_DAY_PLAN},
+      currentWeekCompletedDays:fixedWeekRecords(localDateValue()).map(h=>h.fixedDayKey),
       exercises:exerciseSnapshot,
       exerciseHistory,
       sessionHistory:Array.isArray(state.history)?state.history:[],
@@ -736,7 +791,7 @@
       (e.weight?field(e.weightLabel||'重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>'+(e.loadLabel||'自重')+'</strong></div>')+
       field(e.metricLabel||(e.id==='dead_hang'?'時間':'レップ'),'reps',t.reps,'text',e.unit||'')+
       field('セット','sets',t.sets,'number','')+
-      '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span><button type="button" class="primary save-exercise-record">保存</button></div>'+
+      '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span>'+(BIG3_IDS.has(e.id)?'<button type="button" class="secondary detail-exercise-record">詳細入力</button>':'')+'<button type="button" class="primary save-exercise-record">保存</button></div>'+
       exerciseRecordBestHtml(e)+
     '</div>';
   }
@@ -751,6 +806,7 @@
       link.onclick=open;
       link.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){open(e);}};
     });
+    root.querySelectorAll('.detail-exercise-record').forEach(btn=>btn.onclick=e=>{e.stopPropagation();openBig3DetailDialog(btn.closest('.simple-exercise').dataset.exerciseId);});
     root.querySelectorAll('.save-exercise-record').forEach(btn=>btn.onclick=e=>{
       e.stopPropagation();
       saveExerciseRecord(btn.closest('.simple-exercise'));
@@ -816,13 +872,14 @@
 
   function qualifiedWeightRecords(def){
     const q=qualificationFor(def);
-    return exerciseHistory.filter(r=>
-      r.exerciseId===def.id &&
-      Number(r.sets)>=q.sets &&
-      Number(r.metric)>=q.reps &&
-      Number.isFinite(Number(r.weight)) &&
-      Number(r.weight)>0
-    );
+    return exerciseHistory.flatMap(r=>{
+      if(r.exerciseId!==def.id)return [];
+      if(r.recordKind==='big3-detail'){
+        const weight=Number(r.qualificationWeight);
+        return Number.isFinite(weight)&&weight>0?[{...r,weight}]:[];
+      }
+      return Number(r.sets)>=q.sets&&Number(r.metric)>=q.reps&&Number(r.weight)>0?[r]:[];
+    });
   }
 
   function achievedWeight(def){
@@ -941,79 +998,68 @@
     });
   }
 
+
   function renderTodayMenuSelector(){
     document.querySelector('.today-menu-chooser')?.remove();
   }
-
   function renderTodayWorkoutInline(){
     const root=document.querySelector('#todayInlineExerciseList');
     const title=document.querySelector('#todayInlineTitle');
     const desc=document.querySelector('#todayInlineDesc');
     if(!root||!title||!desc)return;
-    const dateValue=currentBuffetDate();
-    const selected=buffetDraft(dateValue);
-    const existing=buffetRecordForDate(dateValue);
-    const counts=buffetCounts(dateValue,existing);
-    const quotas=buffetQuotaMap();
-    title.textContent=FLEX_STRENGTH_PLAN.name+' · '+flexPlanPrefs.dailyCount+'種目';
-    desc.textContent='体調を見て選択。週の必要回数だけ守れば、いつ実施するかは自由です。ベンチプレスは週3回・5×5、それ以外は原則12×3。';
-    root.innerHTML='<div class="buffet-selection-summary"><strong>'+selected.length+' / '+flexPlanPrefs.dailyCount+'種目選択</strong><span>週'+state.programMode+'日 · 合計'+buffetWeeklyTotal()+'枠</span></div>'+
-      '<div class="buffet-exercise-grid">'+buffetPool().map(e=>{
-        const t=targets[e.id],isSelected=selected.includes(e.id);
-        const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
-        const reached=done>=quota&&!isSelected,open=ui.openTodayExercise===e.id;
+    const dateValue=currentBuffetDate(),day=selectedFixedDay();
+    const done=new Set(fixedWeekRecords(dateValue).map(r=>r.fixedDayKey));
+    title.textContent=day.title+' · '+day.minutes;
+    desc.textContent=day.desc+'。BIG3はアップ1セット・休憩4分。補助は原則3セット・休憩2分。';
+    root.innerHTML=
+      '<div class="fixed-day-picker"><label>メニューを選択<select id="fixedDaySelect">'+
+      FIXED_FIVE_DAY_PLAN.map(d=>'<option value="'+d.key+'" '+(d.key===day.key?'selected':'')+'>'+esc(d.title)+(done.has(d.key)?'（完了）':'')+'</option>').join('')+
+      '</select></label><span>今週 '+done.size+' / 5日完了</span></div>'+
+      '<div class="fixed-training-intro">全体アップ：トレッドミル5分＋動的ストレッチ（計10分）</div>'+
+      '<div class="buffet-exercise-grid">'+day.items.map((item,i)=>{
+        const e=exerciseById(item[0]),t=targets[e.id],open=ui.openTodayExercise===e.id;
         const weight=e.weight?(t.weight===''?'未設定':esc(t.weight)+' kg'):(e.loadLabel||'自重');
-        return '<article class="simple-exercise buffet-exercise-card '+(isSelected?'selected ':'')+(reached?'quota-done ':'')+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
-          '<div class="buffet-card-top">'+
-            '<button type="button" class="simple-exercise-summary buffet-exercise-summary">'+
-              '<div class="exercise-title-line">'+badge(e)+'<div><strong>'+googleImageName(e)+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
-              '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(buffetPrescription(e))+'</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
-            '</button>'+
-            '<button type="button" class="'+(isSelected?'primary':'secondary')+' buffet-select-btn" '+(reached?'disabled':'')+'>'+(isSelected?'選択済み':'選択')+'</button>'+
-          '</div>'+
-          '<div class="buffet-quota-row"><span>今週 '+done+' / '+quota+'回</span><span>'+(reached?'週目標達成':(quota-done)+'回残り')+'</span></div>'+
+        return '<article class="simple-exercise buffet-exercise-card '+(open?'open':'')+'" data-exercise-id="'+e.id+'">'+
+          '<button type="button" class="simple-exercise-summary buffet-exercise-summary">'+
+            '<div class="exercise-title-line"><span class="fixed-order">'+(i+1)+'</span>'+badge(e)+
+              '<div><strong>'+esc(fixedExerciseName(e.id))+'</strong><small>'+esc(e.desc)+'</small></div></div>'+
+            '<div class="exercise-values">'+exerciseLevelBadge(e)+'<span>'+weight+'</span><span>'+esc(fixedPrescription(item))+'</span><span>休憩 '+fixedRest(item)+'</span><span class="fold-indicator">'+(open?'▲':'▼')+'</span></div>'+
+          '</button>'+
           (open?exerciseEditorHtml(e,t):'')+
         '</article>';
-      }).join('')+'</div>';
-
-    root.querySelectorAll('.buffet-select-btn').forEach(btn=>btn.onclick=()=>{
-      const card=btn.closest('[data-exercise-id]'),id=card.dataset.exerciseId,list=buffetDraft(dateValue);
-      const idx=list.indexOf(id);
-      if(idx>=0)list.splice(idx,1);
-      else{
-        if(list.length>=flexPlanPrefs.dailyCount){showToast('1日は'+flexPlanPrefs.dailyCount+'種目までです');return;}
-        const current=buffetCounts(dateValue,existing);
-        if((current[id]||0)>=Number(quotas[id]||0)){showToast('この種目は今週の必要回数を達成済みです');return;}
-        list.push(id);
-      }
-      saveBuffetDrafts();
-      renderTodayWorkoutInline();
+      }).join('')+'</div>'+
+      '<div class="fixed-training-outro">最後：ストレッチ5分</div>';
+    root.querySelector('#fixedDaySelect').onchange=e=>{
+      ui.fixedDayKey=e.target.value;ui.openTodayExercise=null;saveUi();renderTodayWorkoutInline();
+    };
+    bindExerciseCardInteractions(root,()=>{
+      renderTodayWorkoutInline();renderCatalogProgram();renderExercises();renderTrainingModes();
     });
-    bindExerciseCardInteractions(root,()=>{renderTodayWorkoutInline();renderCatalogProgram();renderExercises();renderTrainingModes();});
     root.querySelectorAll('.buffet-exercise-summary').forEach(btn=>btn.onclick=()=>{
       const id=btn.closest('[data-exercise-id]').dataset.exerciseId;
-      ui.openTodayExercise=ui.openTodayExercise===id?null:id;
-      saveUi();renderTodayWorkoutInline();
+      ui.openTodayExercise=ui.openTodayExercise===id?null:id;saveUi();renderTodayWorkoutInline();
     });
     renderTodayCompletionState();
   }
-
   function renderCatalogProgram(){
     const title=document.querySelector('#catalogProgramTitle');
     const grid=document.querySelector('#catalogProgramGrid');
     const total=document.querySelector('#buffetWeeklyTotal');
     if(!title||!grid)return;
-    const dateValue=currentBuffetDate(),counts=buffetCounts(dateValue),quotas=buffetQuotaMap();
-    title.textContent='週'+flexPlanPrefs.daysPerWeek+'日 · 1日'+flexPlanPrefs.dailyCount+'種目';
-    if(total)total.textContent='週 '+buffetWeeklyTotal()+'枠';
-    grid.innerHTML='<div class="buffet-program-note"><strong>Flex方式</strong><p>その日の体調に合わせて'+flexPlanPrefs.dailyCount+'種目を選択。各種目は週間回数を満たす。ベンチ5×5、スクワット8×3、デッドリフト5×3、その他は原則12×3。</p></div>'+
-      '<div class="buffet-quota-grid">'+buffetPool().map(e=>{
-        const done=Number(counts[e.id]||0),quota=Number(quotas[e.id]||0);
-        return '<article class="buffet-quota-card '+(done>=quota?'done':'')+'">'+
-          '<div>'+badge(e)+'<strong>'+esc(e.name)+'</strong></div>'+
-          '<span>'+esc(buffetPrescription(e))+'</span><b>週 '+done+' / '+quota+'回</b></article>';
-      }).join('')+'</div>';
+    const done=new Set(fixedWeekRecords(currentBuffetDate()).map(r=>r.fixedDayKey));
+    title.textContent='週5回 · ベンチ5 / スクワット3 / デッド3';
+    if(total)total.textContent='今週 '+done.size+' / 5日';
+    grid.innerHTML='<div class="fixed-program-rules"><strong>共通ルール</strong><p>全体アップ10分（トレッドミル5分＋動的ストレッチ）。BIG3はアップ1＋本番セット・休憩4分。引く種目・補助種目は3セット・休憩2分。腹筋・カーフは休憩2分以下。終了後ストレッチ5分。</p></div>'+
+      FIXED_FIVE_DAY_PLAN.map(day=>{
+        return '<details class="fixed-program-day" '+(day.key===selectedFixedDay().key?'open':'')+'>'+
+          '<summary><strong>'+esc(day.title)+'</strong><span>'+esc(day.minutes)+(done.has(day.key)?' · 完了':'')+'</span></summary>'+
+          '<p>'+esc(day.desc)+'</p><ol>'+
+          day.items.map(item=>'<li><span>'+esc(fixedExerciseName(item[0]))+'</span><strong>'+esc(fixedPrescription(item))+'</strong><small>休憩 '+fixedRest(item)+'</small></li>').join('')+
+          '</ol></details>';
+      }).join('')+
+      '<div class="fixed-program-rules"><strong>重量の進め方</strong><p>その週の全セット・全レップを正しいフォームで完遂したら、翌週ベンチ・スクワット＋2.5kg、デッド＋2.5〜5kg。レップ低下・フォーム崩れなら維持。2週連続で低下したら約10%下げて積み直す。Day 5のベンチも同じ重量。</p><p>肩前部に違和感があればまずペックフライを減らす。腰の疲労が抜けなければデッド週3回のうち1回を軽くする。</p></div>';
   }
+
 
   function exerciseGoal(def){
     const raw=weightGoals[def.id];
@@ -1056,6 +1102,94 @@
     el.classList.remove('play');
     void el.offsetWidth;
     el.classList.add('play');
+  }
+
+
+  function ensureBig3DetailDialog(){
+    let dialog=document.querySelector('#big3DetailDialog');
+    if(dialog)return dialog;
+    dialog=document.createElement('dialog');
+    dialog.id='big3DetailDialog';
+    dialog.className='big3-detail-dialog';
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+  function openBig3DetailDialog(id){
+    if(!BIG3_IDS.has(id))return;
+    const def=exerciseById(id),day=selectedFixedDay(),dateValue=currentBuffetDate();
+    const plan=day.items.find(item=>item[0]===id);
+    const workingCount=plan?plan[2]:(id==='heavy_bench_press'?4:3);
+    const targetReps=plan?.[3]||(id==='barbell_squat'?8:5);
+    const existing=exerciseHistory.find(r=>r.recordKind==='big3-detail'&&r.exerciseId===id&&r.fixedDayKey===day.key&&localDateValue(new Date(r.iso))===dateValue);
+    const past=existing?.setsDetail||[];
+    const dialog=ensureBig3DetailDialog();
+    dialog.innerHTML='<form method="dialog" id="big3DetailForm">'+
+      '<div class="big3-detail-head"><div><p class="eyebrow">BIG3 · 詳細入力</p><h2>'+esc(def.name)+'</h2><p>'+esc(day.title)+' · '+dateValue+'</p></div><button type="button" class="big3-detail-close" aria-label="閉じる">×</button></div>'+
+      '<p class="big3-detail-note">アップ1セット＋本番'+workingCount+'セット。実施したセットの重量・回数を入力。未実施の行は空欄で保存できます。</p>'+
+      '<div class="big3-detail-list">'+Array.from({length:workingCount+1},(_,i)=>{
+        const warm=i===0,entry=past.find(r=>r.slot===i);
+        const weight=entry?.weight??(warm?'':targets[id]?.weight??'');
+        const reps=entry?.reps??'';
+        return '<div class="big3-detail-row" data-slot="'+i+'" data-type="'+(warm?'warmup':'working')+'">'+
+          '<strong>'+(warm?'アップ':'本番 '+i)+'</strong>'+
+          '<label><span>重量 (kg)</span><input name="weight'+i+'" inputmode="decimal" type="number" min="0.5" step="0.5" placeholder="kg" value="'+esc(weight)+'"></label>'+
+          '<label><span>回数</span><input name="reps'+i+'" inputmode="numeric" type="number" min="1" step="1" placeholder="'+(warm?'回数':targetReps)+'" value="'+esc(reps)+'"></label>'+
+        '</div>';
+      }).join('')+'</div>'+
+      '<p class="big3-detail-error" role="alert" aria-live="polite"></p>'+
+      '<div class="big3-detail-actions"><button type="button" class="secondary big3-detail-cancel">キャンセル</button><button type="submit" class="primary">セット記録を保存</button></div>'+
+    '</form>';
+    dialog.querySelector('.big3-detail-close').onclick=()=>dialog.close();
+    dialog.querySelector('.big3-detail-cancel').onclick=()=>dialog.close();
+    dialog.querySelector('#big3DetailForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      const rows=[...dialog.querySelectorAll('.big3-detail-row')];
+      const details=[],error=dialog.querySelector('.big3-detail-error');
+      for(const row of rows){
+        const rawWeight=row.querySelector('input[name^="weight"]').value;
+        const rawReps=row.querySelector('input[name^="reps"]').value;
+        // A planned weight without performed reps is an unperformed set, not a saved set.
+        if(!rawReps.trim())continue;
+        const weight=Number(rawWeight),reps=Number(rawReps);
+        if(!Number.isFinite(weight)||weight<=0||!Number.isInteger(reps)||reps<=0){
+          error.textContent='入力したセットは重量と正の整数の回数が必要です。';return;
+        }
+        details.push({slot:Number(row.dataset.slot),type:row.dataset.type,weight,reps});
+      }
+      const working=details.filter(x=>x.type==='working');
+      if(!working.length){error.textContent='本番セットを少なくとも1つ入力してください。';return;}
+      const top=working.reduce((a,b)=>b.weight>a.weight?b:a);
+      const q=qualificationFor(def);
+      const qualified=working.filter(x=>x.reps>=q.reps).map(x=>x.weight).sort((a,b)=>b-a);
+      const qualificationWeight=qualified.length>=q.sets?qualified[q.sets-1]:null;
+      const wasLevel=hasLevelProgress(def)?currentExerciseLevel(def):0;
+      const iso=selectedDateToIso(dateValue);
+      const record={
+        id:existing?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2,7),
+        iso,exerciseId:id,exerciseName:def.name,
+        recordKind:'big3-detail',fixedDayKey:day.key,setsDetail:details,
+        weight:top.weight,reps:String(top.reps),metric:top.reps,sets:working.length,
+        qualificationWeight
+      };
+      if(existing)Object.assign(existing,record);
+      else exerciseHistory.push(record);
+      exerciseHistory.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
+      saveExerciseHistory();
+      targets[id].weight=top.weight;saveTargets();
+      ui.progressExercise=id;saveUi();
+      dialog.close();
+      renderExercises();renderTodayWorkoutInline();renderExerciseProgress();
+      renderExerciseHistory();renderWeightGoals();
+      const newLevel=hasLevelProgress(def)?currentExerciseLevel(def):0;
+      const key=id+':m'+exerciseMode(def);
+      const previousNotified=Number(weightAchievements[key]||0);
+      if(qualificationWeight!=null&&newLevel>Math.max(wasLevel,previousNotified)){
+        weightAchievements[key]=newLevel;saveWeightAchievements();
+        showWeightAchievement(def,wasLevel,newLevel,qualificationWeight);
+      }
+      showToast(def.name+'のセット記録を保存しました');
+    });
+    dialog.showModal();
   }
 
   function saveExerciseRecord(box){
@@ -1210,9 +1344,11 @@
     const root=document.querySelector('#exerciseLogHistory');
     if(!root)return;
     if(!exerciseHistory.length){root.innerHTML='<div class="empty">まだ種目記録はありません。</div>';return;}
-    root.innerHTML=[...exerciseHistory].reverse().slice(0,60).map(r=>{
+    root.innerHTML=[...exerciseHistory].sort((a,b)=>new Date(b.iso)-new Date(a.iso)).slice(0,60).map(r=>{
       const def=exercises.find(e=>e.id===r.exerciseId)||{name:r.exerciseName||r.exerciseId,weight:r.weight!=null};
-      return '<div class="exercise-history-row"><span>'+formatDateTime(r.iso)+'</span><strong>'+esc(def.name)+'</strong><span>'+(r.weight!=null?r.weight+' kg':(def.loadLabel||'自重'))+' · '+esc(r.reps)+(def.unit&&!String(r.reps).includes(def.unit)?' '+def.unit:'')+' · '+r.sets+' set</span></div>';
+      const info=(r.weight!=null?r.weight+' kg':(def.loadLabel||'自重'))+' · '+esc(r.reps)+(def.unit&&!String(r.reps).includes(def.unit)?' '+def.unit:'')+' · '+r.sets+' set';
+      const detail=Array.isArray(r.setsDetail)?'<details class="big3-history-detail"><summary>セット明細</summary><ol>'+r.setsDetail.map(x=>'<li>'+(x.type==='warmup'?'アップ':'本番 '+x.slot)+'：'+esc(x.weight)+' kg × '+esc(x.reps)+'回</li>').join('')+'</ol></details>':'';
+      return '<div class="exercise-history-row"><span>'+formatDateTime(r.iso)+'</span><strong>'+esc(def.name)+'</strong><div class="exercise-history-description">'+info+detail+'</div></div>';
     }).join('');
   }
 
@@ -1249,6 +1385,21 @@
 
   const style=document.createElement('style');
   style.textContent=`
+
+    .fixed-day-picker{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:end;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:12px}
+    .fixed-day-picker label{display:grid;gap:5px;flex:1;min-width:205px;color:var(--muted);font-size:.76rem}.fixed-day-picker select{width:100%;color:var(--text);background:var(--surface);padding:10px;border:1px solid var(--line);border-radius:9px}
+    .fixed-day-picker>span{font-size:.76rem;color:var(--accent);font-weight:800}.fixed-training-intro,.fixed-training-outro{padding:10px 12px;color:var(--muted);font-size:.78rem}
+    .fixed-order{color:var(--muted);font-size:.85rem;font-weight:900;min-width:16px}
+    .fixed-program-day{border:1px solid var(--line);border-radius:12px;background:var(--surface2);overflow:hidden}.fixed-program-day summary{list-style:none;cursor:pointer;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}.fixed-program-day summary::-webkit-details-marker{display:none}
+    .fixed-program-day summary strong{color:var(--accent)}.fixed-program-day summary span{font-size:.75rem;color:var(--muted)}.fixed-program-day p{padding:0 14px;color:var(--muted);font-size:.8rem}.fixed-program-day ol{margin:0;padding:0 14px 14px 34px}.fixed-program-day li{padding:6px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:.84rem}.fixed-program-day li small{color:var(--muted)}.fixed-program-day li strong{white-space:nowrap}
+    .fixed-program-rules{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.fixed-program-rules p{margin:6px 0 0;color:var(--muted);font-size:.82rem}
+    .big3-detail-dialog{border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--text);width:min(560px,calc(100vw - 24px));max-height:90vh;overflow-y:auto;padding:20px;box-sizing:border-box}.big3-detail-dialog::backdrop{background:rgba(0,0,0,.75)}
+    .big3-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.big3-detail-head h2{margin:4px 0}.big3-detail-head p{margin:0;color:var(--muted);font-size:.78rem}.big3-detail-close{border:0;background:var(--surface3);color:var(--text);border-radius:9px;padding:7px 12px;font-size:1.2rem}
+    .big3-detail-note{font-size:.79rem;color:var(--muted);line-height:1.5}.big3-detail-list{display:grid;gap:9px}.big3-detail-row{display:grid;grid-template-columns:74px minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:11px}.big3-detail-row>strong{align-self:center;font-size:.83rem}
+    .big3-detail-row label{display:grid;gap:5px;font-size:.7rem;color:var(--muted)}.big3-detail-row input{width:100%;min-width:0;box-sizing:border-box;padding:9px 6px;font-size:1rem}.big3-detail-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px}
+    .big3-detail-error{color:var(--danger);font-size:.76rem;min-height:1em}.big3-history-detail{margin-top:5px;font-size:.78rem}.big3-history-detail summary{cursor:pointer;color:var(--accent)}.big3-history-detail ol{margin:6px 0 0;padding-left:20px}.exercise-history-description{font-size:.8rem;color:var(--muted)}
+    @media(max-width:700px){.fixed-program-day li{grid-template-columns:minmax(0,1fr) auto}.fixed-program-day li small{grid-column:1/-1}.big3-detail-dialog{padding:14px}.big3-detail-row{grid-template-columns:60px 1fr 1fr;gap:6px}.big3-detail-actions>*{flex:1}}
+
     .ui-redundant,.legacy-training-level-hidden{display:none!important}
     .app-section-hidden{display:none!important}
     .simple-tabs{position:sticky;top:0;z-index:80;max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:8px;overflow-x:auto;background:var(--bg)}
