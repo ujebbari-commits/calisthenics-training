@@ -56,3 +56,68 @@
  .nutrition-entry-totals{font-size:.8rem}
 }
 @media(max-width:380px){.nutrition-entry-grid{grid-template-columns:1fr}}
+
+/* Keep this tab within the same viewport width as every other app tab. */
+#nutritionPanel.nutrition-panel{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  grid-template-columns:minmax(0,1fr);
+}
+#nutritionPanel > *,
+.nutrition-summary-grid > *,
+.nutrition-entry-grid > *,
+.nutrition-quick-foods > *{
+  min-width:0;
+  max-width:100%;
+}
+.nutrition-panel .nutrition-section{min-width:0}
+.nutrition-panel input,.nutrition-panel select{max-width:100%;min-width:0}
+.nutrition-chart-wrap{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.nutrition-chart-wrap svg{display:block;width:100%;max-width:100%;min-width:0;height:auto}
+.nutrition-summary-grid{min-width:0}
+.nutrition-summary-block{min-width:0}
+.nutrition-stat-grid{min-width:0}
+.nutrition-stat-grid b{overflow-wrap:anywhere}
+.nutrition-entry-time{display:block;color:var(--accent);font-size:.72rem;font-weight:750}
+.nutrition-entry-main strong,.nutrition-quick-food-name strong{overflow-wrap:anywhere}
+.nutrition-quick-foods{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.nutrition-quick-food{
+  display:grid;grid-template-columns:minmax(0,1fr) 118px 132px;
+  align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface2);min-width:0
+}
+.nutrition-quick-food-name{display:grid;gap:5px;min-width:0}
+.nutrition-quick-food-name strong{font-size:.91rem}
+.nutrition-quick-food-name small{font-size:.72rem;color:var(--muted);line-height:1.4}
+.nutrition-quick-portion{display:grid;gap:5px;color:var(--muted);font-size:.73rem}
+.nutrition-quick-portion input{
+  width:100%;min-width:0;min-height:38px;padding:7px 8px;
+  border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--surface)
+}
+.nutrition-quick-count{display:grid;gap:4px;justify-items:center;min-width:0}
+.nutrition-quick-count>small{font-size:.69rem;color:var(--muted)}
+.nutrition-stepper{display:grid;grid-template-columns:38px minmax(28px,1fr) 38px;gap:4px;width:100%;align-items:center}
+.nutrition-stepper button{
+  min-height:38px;border:1px solid var(--line);border-radius:9px;
+  font:inherit;font-weight:850;font-size:1.1rem;color:var(--text);background:var(--surface);cursor:pointer
+}
+.nutrition-stepper button:disabled{opacity:.3;cursor:default}
+.nutrition-stepper output{text-align:center;font-size:1rem;font-variant-numeric:tabular-nums;font-weight:850}
+@media(max-width:650px){
+  .nutrition-quick-food{grid-template-columns:minmax(0,1fr) 108px;gap:10px}
+  .nutrition-quick-food-name{grid-column:1/-1}
+  .nutrition-stepper{grid-template-columns:36px minmax(25px,1fr) 36px}
+  .nutrition-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nutrition-entry{gap:8px}
+  .nutrition-summary-select{max-width:100%}
+}
+@media(max-width:380px){
+  .nutrition-stat-grid{gap:5px}
+  .nutrition-summary-block{padding:11px}
+  .nutrition-entry-grid{grid-template-columns:1fr}
+  .nutrition-entry{grid-template-columns:minmax(0,1fr)}
+  .nutrition-entry-totals{grid-row:auto;justify-self:start;display:flex;gap:12px}
+  .nutrition-entry-actions{grid-column:1;justify-content:start}
+}
