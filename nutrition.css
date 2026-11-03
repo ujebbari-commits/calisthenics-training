@@ -1,0 +1,58 @@
+/* Food-label nutrition tracking. Uses the app's existing theme variables. */
+.nutrition-panel{display:grid;gap:17px}
+.nutrition-summary-select{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.nutrition-summary-select label{display:grid;gap:5px;color:var(--muted);font-size:.78rem;font-weight:700}
+.nutrition-summary-select input{min-height:40px}
+.nutrition-summary-select button{min-height:40px}
+.nutrition-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.nutrition-summary-block{border:1px solid var(--line);background:var(--surface2);border-radius:13px;padding:14px}
+.nutrition-summary-block>strong{font-size:.85rem}
+.nutrition-summary-block>strong span{color:var(--muted);font-size:.76rem;font-weight:500}
+.nutrition-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.nutrition-stat-grid>div{display:grid;gap:5px}
+.nutrition-stat-grid span{color:var(--muted);font-size:.73rem}
+.nutrition-stat-grid b{color:var(--accent);font-size:1.27rem}
+.nutrition-section{padding-top:15px;border-top:1px solid var(--line)}
+.nutrition-section h3{margin:0 0 12px;font-size:1.02rem}
+.nutrition-field{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:.78rem;font-weight:700}
+.nutrition-field input,.nutrition-field select{width:100%;min-width:0;min-height:40px;box-sizing:border-box}
+.nutrition-field select{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--text)}
+.nutrition-entry-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+.nutrition-example{color:var(--muted);font-size:.76rem;line-height:1.55;margin:12px 0}
+.nutrition-form-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.nutrition-status{min-height:1.2em;margin:7px 0;color:var(--accent);font-size:.77rem}
+.nutrition-section-heading{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.nutrition-section-heading h3{margin:0}
+.nutrition-section-heading>span{color:var(--muted);font-size:.78rem}
+.nutrition-empty{color:var(--muted);font-size:.82rem}
+.nutrition-entry{border:1px solid var(--line);background:var(--surface2);padding:12px;border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;margin-bottom:8px}
+.nutrition-entry-main{display:grid;gap:5px;min-width:0}
+.nutrition-entry-main strong{color:var(--text)}
+.nutrition-entry-main small{font-size:.73rem;color:var(--muted);line-height:1.45}
+.nutrition-entry-totals{display:grid;gap:5px;text-align:right;white-space:nowrap}
+.nutrition-entry-totals b{font-size:.82rem;color:var(--accent)}
+.nutrition-entry-actions{display:flex;gap:6px}
+.nutrition-entry-actions button{padding:7px 10px;font-size:.76rem}
+.nutrition-trend-tabs{display:flex;gap:6px}
+.nutrition-trend-tabs button{border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:var(--surface2);color:var(--muted);font:inherit;font-size:.76rem;cursor:pointer}
+.nutrition-trend-tabs button.active{color:#07110c;background:var(--accent);border-color:var(--accent);font-weight:800}
+.nutrition-trend-hint{font-size:.76rem;color:var(--muted);margin:2px 0 14px}
+.nutrition-chart-wrap{margin:0 0 15px;overflow-x:auto}
+.nutrition-chart-wrap h4{font-size:.83rem;margin:0 0 7px}
+.nutrition-chart-wrap svg{display:block;min-width:500px;width:100%;height:auto;max-height:230px}
+.nutrition-chart-grid{stroke:var(--line);stroke-width:1}
+.nutrition-chart-line{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.nutrition-chart-point{fill:var(--surface);stroke:var(--accent);stroke-width:3}
+.nutrition-chart-text{fill:var(--muted);font:11px system-ui,sans-serif}
+@media(max-width:800px){
+ .nutrition-entry{grid-template-columns:minmax(0,1fr) auto}
+ .nutrition-entry-actions{grid-column:1/-1;justify-content:flex-end}
+}
+@media(max-width:600px){
+ .nutrition-summary-grid{grid-template-columns:1fr}
+ .nutrition-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .nutrition-stat-grid b{font-size:1.2rem}
+ .nutrition-trend-tabs{width:100%;flex-wrap:wrap}
+ .nutrition-entry-totals{font-size:.8rem}
+}
+@media(max-width:380px){.nutrition-entry-grid{grid-template-columns:1fr}}
