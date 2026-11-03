@@ -51,6 +51,46 @@
     return {protein:a.protein+n.protein,calories:a.calories+n.calories};
   },{protein:0,calories:0});
   const entriesForDay=day=>data.entries.filter(e=>e.date===day);
+  // 1回分の量は商品ごとに保存。旧データは直近の摂取量を使用する。
+  const portionOf=food=>{
+    const saved=Number(food.defaultServingGrams);
+    if(Number.isFinite(saved)&&saved>0)return saved;
+    const recent=data.entries.filter(e=>e.foodId===food.id&&Number(e.consumedGrams)>0)
+      .sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0))[0];
+    const amount=Number(recent?.consumedGrams);
+    return Number.isFinite(amount)&&amount>0?amount:Number(food.labelGrams);
+  };
+  function adjustSavedFood(foodId,direction,portionValue){
+    const food=data.foods.find(f=>f.id===foodId);
+    if(!food||![-1,1].includes(direction))return;
+    const status=el('nutritionStatus');
+    if(direction>0){
+      const portion=Number(portionValue);
+      if(!Number.isFinite(portion)||portion<=0){
+        status.textContent='1回分のグラム数を正しく入力してください。';return;
+      }
+      if(viewingDay>asLocalDate()){
+        status.textContent='未来の日付には追加できません。';return;
+      }
+      food.defaultServingGrams=portion;
+      data.entries.push({
+        id:makeId(),createdAt:Date.now(),date:viewingDay,foodId:food.id,
+        name:food.name,labelGrams:food.labelGrams,proteinGrams:food.proteinGrams,
+        calories:food.calories,consumedGrams:portion,quickAdded:true
+      });
+      save();render();
+      status.textContent=food.name+'を'+fmt(portion)+'g追加しました。';
+      return;
+    }
+    // 直近の1件を取り消す。通常入力した記録も数に含まれる。
+    const latest=data.entries.filter(e=>e.date===viewingDay&&e.foodId===foodId)
+      .sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0))[0];
+    if(!latest){status.textContent='取り消せる記録がありません。';return;}
+    data.entries=data.entries.filter(e=>e.id!==latest.id);
+    if(editingId===latest.id)resetEntryForm();
+    save();render();
+    status.textContent=food.name+'の直近の1件を取り消しました。';
+  }
   const entriesForWeek=monday=>{
     const end=plusDays(monday,6);
     return data.entries.filter(e=>e.date>=monday&&e.date<=end);
@@ -66,6 +106,9 @@
       '<div class="nutrition-summary-block"><strong>日別 <span id="nutritionDailyDate"></span></strong><div class="nutrition-stat-grid"><div><span>タンパク質</span><b id="nutritionDailyProtein">0 g</b></div><div><span>カロリー</span><b id="nutritionDailyCalories">0 kcal</b></div></div></div>'+
       '<div class="nutrition-summary-block"><strong>週別 <span id="nutritionWeekDate"></span></strong><div class="nutrition-stat-grid"><div><span>タンパク質</span><b id="nutritionWeeklyProtein">0 g</b></div><div><span>カロリー</span><b id="nutritionWeeklyCalories">0 kcal</b></div></div></div>'+
     '</div>'+
+    '<section class="nutrition-section nutrition-quick-section"><div class="nutrition-section-heading"><h3>登録済み食品をすぐ記録</h3><span id="nutritionQuickDate"></span></div>'+
+      '<p class="nutrition-example">1回分のグラム数を設定し、＋で追加、−で直近の1件を取り消せます。数字は選択日の記録回数です。</p>'+
+      '<div id="nutritionQuickFoods" class="nutrition-quick-foods"></div></section>'+
     '<section class="nutrition-section"><h3>食品を記録</h3>'+
       '<form id="nutritionFoodForm" novalidate>'+
         '<label class="nutrition-field"><span>登録済み食品から選択（任意）</span><select id="nutritionExistingFood"><option value="">新しい食品を入力</option></select></label>'+
@@ -82,7 +125,7 @@
         '<p class="nutrition-status" id="nutritionStatus" aria-live="polite"></p>'+
       '</form>'+
     '</section>'+
-    '<section class="nutrition-section"><div class="nutrition-section-heading"><h3>この日の摂取記録</h3><span id="nutritionEntryCount"></span></div><div id="nutritionEntries"></div></section>'+
+    '<section class="nutrition-section"><div class="nutrition-section-heading"><h3 id="nutritionEntriesTitle">今日の摂取記録</h3><span id="nutritionEntryCount"></span></div><div id="nutritionEntries"></div></section>'+
     '<section class="nutrition-section"><div class="nutrition-section-heading"><h3>摂取量の推移</h3><div class="nutrition-trend-tabs"><button type="button" data-trend="daily" class="active">日別（14日）</button><button type="button" data-trend="weekly">週別（8週）</button></div></div>'+
       '<p class="nutrition-trend-hint">未記録の日・週はグラフ上で0と表示しますが、実際の摂取量が0だったとは限りません。</p>'+
       '<div class="nutrition-chart-wrap"><h4>タンパク質 (g)</h4><div id="nutritionProteinChart"></div></div>'+
@@ -125,15 +168,63 @@
     el('nutritionWeeklyProtein').textContent=fmt(weekly.protein)+' g';
     el('nutritionWeeklyCalories').textContent=fmt(weekly.calories)+' kcal';
   }
+
+  function renderQuickFoods(){
+    const list=el('nutritionQuickFoods');
+    el('nutritionQuickDate').textContent=labelDate(viewingDay)+'の記録';
+    if(!data.foods.length){
+      list.innerHTML='<p class="nutrition-empty">食品を1つ登録すると、ここからすぐ追加できます。</p>';
+      return;
+    }
+    list.innerHTML=[...data.foods].sort((a,b)=>a.name.localeCompare(b.name,'ja')).map(food=>{
+      const count=entriesForDay(viewingDay).filter(e=>e.foodId===food.id).length;
+      const portion=portionOf(food);
+      return '<article class="nutrition-quick-food" data-food-id="'+esc(food.id)+'">'+
+        '<div class="nutrition-quick-food-name"><strong>'+esc(food.name)+'</strong>'+
+          '<small>表示 '+fmt(food.labelGrams)+'g当たり · P '+fmt(food.proteinGrams)+'g / '+fmt(food.calories)+'kcal</small></div>'+
+        '<label class="nutrition-quick-portion"><span>1回分 (g)</span><input type="number" inputmode="decimal" min="0.01" step="any" data-quick-portion value="'+esc(portion)+'" aria-label="'+esc(food.name)+'の1回分のグラム数"></label>'+
+        '<div class="nutrition-quick-count"><div class="nutrition-stepper" aria-label="'+esc(food.name)+'の記録回数">'+
+          '<button type="button" data-quick-action="-1" aria-label="'+esc(food.name)+'を1件減らす" '+(count?'':'disabled')+'>−</button>'+
+          '<output aria-live="polite">'+count+'</output>'+
+          '<button type="button" data-quick-action="1" aria-label="'+esc(food.name)+'を1回分追加">＋</button>'+
+        '</div><small>記録回数</small></div>'+
+      '</article>';
+    }).join('');
+    list.querySelectorAll('.nutrition-quick-food').forEach(card=>{
+      const portion=card.querySelector('[data-quick-portion]');
+      portion.addEventListener('change',()=>{
+        const food=data.foods.find(f=>f.id===card.dataset.foodId);
+        const value=Number(portion.value);
+        if(!food)return;
+        if(!portion.value.trim()||!Number.isFinite(value)||value<=0){
+          el('nutritionStatus').textContent='1回分のグラム数を正しく入力してください。';
+          portion.value=portionOf(food);
+          return;
+        }
+        food.defaultServingGrams=value;save();
+      });
+      card.querySelectorAll('[data-quick-action]').forEach(button=>button.onclick=()=>{
+        adjustSavedFood(card.dataset.foodId,Number(button.dataset.quickAction),portion.value);
+      });
+    });
+  }
+
   function renderEntries(){
     const list=el('nutritionEntries');
     const entries=[...entriesForDay(viewingDay)].sort((a,b)=>b.createdAt-a.createdAt);
     el('nutritionEntryCount').textContent=entries.length+'件';
+    el('nutritionEntriesTitle').textContent=viewingDay===asLocalDate()?'今日の摂取記録':'選択日の摂取記録';
     if(!entries.length){list.innerHTML='<p class="nutrition-empty">この日の記録はありません。</p>';return;}
     list.innerHTML=entries.map(e=>{
       const n=nutritionOf(e);
+      const added=Number(e.createdAt);
+      const created=Number.isFinite(added)&&added>0?new Date(added):null;
+      const time=created?'追加 '+(asLocalDate(created)===e.date?'':
+        created.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})+' ')+
+        created.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'追加時刻不明';
       return '<article class="nutrition-entry">'+
         '<div class="nutrition-entry-main"><strong>'+esc(e.name)+'</strong>'+
+          '<time class="nutrition-entry-time">'+esc(time)+'</time>'+
           '<small>'+fmt(e.consumedGrams)+'g摂取 · 商品表示 '+fmt(e.labelGrams)+'g当たり：P '+fmt(e.proteinGrams)+'g / '+fmt(e.calories)+'kcal</small></div>'+
         '<div class="nutrition-entry-totals"><b>'+fmt(n.protein)+'g P</b><b>'+fmt(n.calories)+'kcal</b></div>'+
         '<div class="nutrition-entry-actions"><button type="button" class="secondary" data-nutrition-edit="'+esc(e.id)+'">編集</button><button type="button" class="secondary" data-nutrition-delete="'+esc(e.id)+'">削除</button></div>'+
@@ -204,7 +295,7 @@
   }
   function render(){
     el('nutritionViewDate').value=viewingDay;
-    summary();renderEntries();renderTrends();
+    summary();renderQuickFoods();renderEntries();renderTrends();
   }
 
   el('nutritionExistingFood').addEventListener('change',e=>{
@@ -255,7 +346,7 @@
         f.proteinGrams===proteinGrams&&f.calories===calories);
     }
     if(!food){food={id:makeId()};data.foods.push(food);}
-    Object.assign(food,{name,labelGrams,proteinGrams,calories});
+    Object.assign(food,{name,labelGrams,proteinGrams,calories,defaultServingGrams:consumedGrams});
     const old=data.entries.find(x=>x.id===editingId);
     const record={id:old?.id||makeId(),createdAt:old?.createdAt||Date.now(),date,
       foodId:food.id,name,labelGrams,proteinGrams,calories,consumedGrams};
