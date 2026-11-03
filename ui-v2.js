@@ -797,7 +797,7 @@
       (e.weight?field(e.weightLabel||'重量','weight',t.weight,'number','kg'):'<div class="simple-static"><span>負荷</span><strong>'+(e.loadLabel||'自重')+'</strong></div>')+
       field(e.metricLabel||(e.id==='dead_hang'?'時間':'レップ'),'reps',t.reps,'text',e.unit||'')+
       field('セット','sets',t.sets,'number','')+
-      '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span>'+(BIG3_IDS.has(e.id)?'<button type="button" class="secondary detail-exercise-record">詳細入力</button>':'')+'<button type="button" class="primary save-exercise-record">保存</button></div>'+
+      '<div class="simple-editor-actions"><span class="save-record-status" aria-live="polite"></span><button type="button" class="secondary detail-exercise-record">詳細入力</button><button type="button" class="primary save-exercise-record">保存</button></div>'+
       exerciseRecordBestHtml(e)+
       '<label class="exercise-note-field"><span>注釈 <small>自動保存</small></span><textarea class="exercise-note-input" rows="3" placeholder="フォームのコツ・注意点・気づいたことなど">'+esc(exerciseNotes[e.id]||'')+'</textarea></label>'+ 
     '</div>';
@@ -893,7 +893,7 @@
     const q=qualificationFor(def);
     return exerciseHistory.flatMap(r=>{
       if(r.exerciseId!==def.id)return [];
-      if(r.recordKind==='big3-detail'){
+      if(r.recordKind==='big3-detail'||r.recordKind==='set-detail'){
         const weight=Number(r.qualificationWeight);
         return Number.isFinite(weight)&&weight>0?[{...r,weight}]:[];
       }
@@ -1134,59 +1134,75 @@
     return dialog;
   }
   function openBig3DetailDialog(id){
-    if(!BIG3_IDS.has(id))return;
+    if(!exerciseById(id))return;
     const def=exerciseById(id),day=selectedFixedDay(),dateValue=currentBuffetDate();
     const plan=day.items.find(item=>item[0]===id);
-    const workingCount=plan?plan[2]:(id==='heavy_bench_press'?4:3);
-    const targetReps=plan?.[3]||(id==='barbell_squat'?8:5);
-    const existing=exerciseHistory.find(r=>r.recordKind==='big3-detail'&&r.exerciseId===id&&r.fixedDayKey===day.key&&localDateValue(new Date(r.iso))===dateValue);
+    const hasWarmup=BIG3_IDS.has(id);
+    const isTime=!def.weight&&(def.metricLabel==='時間'||def.id==='dead_hang');
+    const unit=isTime?(def.unit||'秒'):'回';
+    const workingCount=plan?plan[2]:Math.max(1,Number(targets[id]?.sets||def.defaultSets||3));
+    const targetReps=plan?.[3]||parseMetric(targets[id]?.reps)||parseMetric(def.reps)||12;
+    const existing=exerciseHistory.find(r=>['set-detail','big3-detail'].includes(r.recordKind)&&r.exerciseId===id&&r.fixedDayKey===day.key&&localDateValue(new Date(r.iso))===dateValue);
     const past=existing?.setsDetail||[];
+    const lastSlot=past.reduce((max,r)=>Math.max(max,Number(r.slot)||0),0);
+    const rowsCount=Math.max(workingCount,lastSlot);
+    const rowHtml=(i,entry)=>'<div class="big3-detail-row" data-slot="'+i+'" data-type="'+(hasWarmup&&i===0?'warmup':'working')+'">'+
+      '<strong>'+(hasWarmup&&i===0?'アップ':'本番 '+(hasWarmup?i:i+1))+'</strong>'+
+      (def.weight?'<label><span>重量 (kg)</span><input data-detail-weight inputmode="decimal" type="number" min="0.01" step="any" placeholder="kg" value="'+esc(entry?.weight??(hasWarmup&&i===0?'':targets[id]?.weight??''))+'"></label>':'<div class="big3-detail-bodyweight">自重 / 重量なし</div>')+
+      '<label><span>'+(isTime?'時間 ('+esc(unit)+')':'回数')+'</span><input data-detail-reps inputmode="'+(isTime?'decimal':'numeric')+'" type="number" min="'+(isTime?'0.01':'1')+'" step="'+(isTime?'any':'1')+'" placeholder="'+esc(String(targetReps))+'" value="'+esc(entry?.reps??'')+'"></label>'+
+    '</div>';
     const dialog=ensureBig3DetailDialog();
     dialog.innerHTML='<form method="dialog" id="big3DetailForm">'+
-      '<div class="big3-detail-head"><div><p class="eyebrow">BIG3 · 詳細入力</p><h2>'+esc(def.name)+'</h2><p>'+esc(day.title)+' · '+dateValue+'</p></div><button type="button" class="big3-detail-close" aria-label="閉じる">×</button></div>'+
-      '<p class="big3-detail-note">アップ1セット＋本番'+workingCount+'セット。実施したセットの重量・回数を入力。未実施の行は空欄で保存できます。</p>'+
-      '<div class="big3-detail-list">'+Array.from({length:workingCount+1},(_,i)=>{
-        const warm=i===0,entry=past.find(r=>r.slot===i);
-        const weight=entry?.weight??(warm?'':targets[id]?.weight??'');
-        const reps=entry?.reps??'';
-        return '<div class="big3-detail-row" data-slot="'+i+'" data-type="'+(warm?'warmup':'working')+'">'+
-          '<strong>'+(warm?'アップ':'本番 '+i)+'</strong>'+
-          '<label><span>重量 (kg)</span><input name="weight'+i+'" inputmode="decimal" type="number" min="0.5" step="0.5" placeholder="kg" value="'+esc(weight)+'"></label>'+
-          '<label><span>回数</span><input name="reps'+i+'" inputmode="numeric" type="number" min="1" step="1" placeholder="'+(warm?'回数':targetReps)+'" value="'+esc(reps)+'"></label>'+
-        '</div>';
-      }).join('')+'</div>'+
+      '<div class="big3-detail-head"><div><p class="eyebrow">セット別 · 詳細入力</p><h2>'+esc(def.name)+'</h2><p>'+esc(day.title)+' · '+dateValue+'</p></div><button type="button" class="big3-detail-close" aria-label="閉じる">×</button></div>'+
+      '<p class="big3-detail-note">'+(hasWarmup?'アップ1＋':'')+'本番'+workingCount+'セットを予定。実施したセットだけ入力してください（空欄の行は未実施）。</p>'+
+      '<div class="big3-detail-list">'+Array.from({length:rowsCount+(hasWarmup?1:0)},(_,i)=>rowHtml(i,past.find(r=>Number(r.slot)===i))).join('')+'</div>'+
+      '<div class="big3-detail-row-controls"><button type="button" class="secondary big3-add-row">＋ セット追加</button><button type="button" class="secondary big3-remove-row">最後のセットを削除</button></div>'+
       '<p class="big3-detail-error" role="alert" aria-live="polite"></p>'+
       '<div class="big3-detail-actions"><button type="button" class="secondary big3-detail-cancel">キャンセル</button><button type="submit" class="primary">セット記録を保存</button></div>'+
     '</form>';
     dialog.querySelector('.big3-detail-close').onclick=()=>dialog.close();
     dialog.querySelector('.big3-detail-cancel').onclick=()=>dialog.close();
+    dialog.querySelector('.big3-add-row').onclick=()=>{
+      const list=dialog.querySelector('.big3-detail-list');
+      const current=list.querySelectorAll('.big3-detail-row').length;
+      if(current>=21)return;
+      list.insertAdjacentHTML('beforeend',rowHtml(current,null));
+    };
+    dialog.querySelector('.big3-remove-row').onclick=()=>{
+      const list=dialog.querySelector('.big3-detail-list');
+      const rows=list.querySelectorAll('.big3-detail-row');
+      if(rows.length>(hasWarmup?2:1))rows[rows.length-1].remove();
+    };
     dialog.querySelector('#big3DetailForm').addEventListener('submit',e=>{
       e.preventDefault();
       const rows=[...dialog.querySelectorAll('.big3-detail-row')];
       const details=[],error=dialog.querySelector('.big3-detail-error');
       for(const row of rows){
-        const rawWeight=row.querySelector('input[name^="weight"]').value;
-        const rawReps=row.querySelector('input[name^="reps"]').value;
-        // A planned weight without performed reps is an unperformed set, not a saved set.
+        const rawWeight=row.querySelector('[data-detail-weight]')?.value||'';
+        const rawReps=row.querySelector('[data-detail-reps]').value;
+        // 未実施の行には重量だけが仮入力されていても保存しない。
         if(!rawReps.trim())continue;
-        const weight=Number(rawWeight),reps=Number(rawReps);
-        if(!Number.isFinite(weight)||weight<=0||!Number.isInteger(reps)||reps<=0){
-          error.textContent='入力したセットは重量と正の整数の回数が必要です。';return;
+        const weight=def.weight?Number(rawWeight):null,reps=Number(rawReps);
+        if((def.weight&&(!rawWeight.trim()||!Number.isFinite(weight)||weight<=0))||
+          !Number.isFinite(reps)||reps<=0||(!isTime&&!Number.isInteger(reps))){
+          error.textContent=def.weight?'入力するセットには正しい重量と回数が必要です。':'正しい回数・時間を入力してください。';return;
         }
         details.push({slot:Number(row.dataset.slot),type:row.dataset.type,weight,reps});
       }
       const working=details.filter(x=>x.type==='working');
       if(!working.length){error.textContent='本番セットを少なくとも1つ入力してください。';return;}
-      const top=working.reduce((a,b)=>b.weight>a.weight?b:a);
+      const top=working.reduce((a,b)=>def.weight?
+        (b.weight>a.weight||b.weight===a.weight&&b.reps>a.reps?b:a):
+        (b.reps>a.reps?b:a));
       const q=qualificationFor(def);
-      const qualified=working.filter(x=>x.reps>=q.reps).map(x=>x.weight).sort((a,b)=>b-a);
+      const qualified=def.weight?working.filter(x=>x.reps>=q.reps).map(x=>x.weight).sort((a,b)=>def.goalDirection==='down'?a-b:b-a):[];
       const qualificationWeight=qualified.length>=q.sets?qualified[q.sets-1]:null;
       const wasLevel=hasLevelProgress(def)?currentExerciseLevel(def):0;
       const iso=selectedDateToIso(dateValue);
       const record={
         id:existing?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2,7),
         iso,exerciseId:id,exerciseName:def.name,
-        recordKind:'big3-detail',fixedDayKey:day.key,setsDetail:details,
+        recordKind:'set-detail',fixedDayKey:day.key,setsDetail:details,
         weight:top.weight,reps:String(top.reps),metric:top.reps,sets:working.length,
         qualificationWeight
       };
@@ -1194,7 +1210,8 @@
       else exerciseHistory.push(record);
       exerciseHistory.sort((a,b)=>new Date(a.iso)-new Date(b.iso));
       saveExerciseHistory();
-      targets[id].weight=top.weight;saveTargets();
+      if(def.weight)targets[id].weight=top.weight;
+      targets[id].reps=String(top.reps);targets[id].sets=working.length;saveTargets();
       ui.progressExercise=id;saveUi();
       dialog.close();
       renderExercises();renderTodayWorkoutInline();renderExerciseProgress();
@@ -1202,9 +1219,9 @@
       const newLevel=hasLevelProgress(def)?currentExerciseLevel(def):0;
       const key=id+':m'+exerciseMode(def);
       const previousNotified=Number(weightAchievements[key]||0);
-      if(qualificationWeight!=null&&newLevel>Math.max(wasLevel,previousNotified)){
+      if(newLevel>Math.max(wasLevel,previousNotified)){
         weightAchievements[key]=newLevel;saveWeightAchievements();
-        showWeightAchievement(def,wasLevel,newLevel,qualificationWeight);
+        showWeightAchievement(def,wasLevel,newLevel,isTime?top.reps:qualificationWeight);
       }
       showToast(def.name+'のセット記録を保存しました');
     });
@@ -1416,7 +1433,7 @@
     .big3-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.big3-detail-head h2{margin:4px 0}.big3-detail-head p{margin:0;color:var(--muted);font-size:.78rem}.big3-detail-close{border:0;background:var(--surface3);color:var(--text);border-radius:9px;padding:7px 12px;font-size:1.2rem}
     .big3-detail-note{font-size:.79rem;color:var(--muted);line-height:1.5}.big3-detail-list{display:grid;gap:9px}.big3-detail-row{display:grid;grid-template-columns:74px minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:11px}.big3-detail-row>strong{align-self:center;font-size:.83rem}
     .big3-detail-row label{display:grid;gap:5px;font-size:.7rem;color:var(--muted)}.big3-detail-row input{width:100%;min-width:0;box-sizing:border-box;padding:9px 6px;font-size:1rem}.big3-detail-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px}
-    .big3-detail-error{color:var(--danger);font-size:.76rem;min-height:1em}.big3-history-detail{margin-top:5px;font-size:.78rem}.big3-history-detail summary{cursor:pointer;color:var(--accent)}.big3-history-detail ol{margin:6px 0 0;padding-left:20px}.exercise-history-description{font-size:.8rem;color:var(--muted)}
+    .big3-detail-row-controls{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}.big3-detail-row-controls button{font-size:.77rem;padding:8px 10px}.big3-detail-bodyweight{color:var(--muted);font-size:.76rem;align-self:center}.big3-detail-error{color:var(--danger);font-size:.76rem;min-height:1em}.big3-history-detail{margin-top:5px;font-size:.78rem}.big3-history-detail summary{cursor:pointer;color:var(--accent)}.big3-history-detail ol{margin:6px 0 0;padding-left:20px}.exercise-history-description{font-size:.8rem;color:var(--muted)}
     @media(max-width:700px){.fixed-program-day li{grid-template-columns:20px minmax(0,1fr) auto}.fixed-program-day li small{grid-column:2/-1}.big3-detail-dialog{padding:14px}.big3-detail-row{grid-template-columns:60px 1fr 1fr;gap:6px}.big3-detail-actions>*{flex:1}}
 
     .ui-redundant,.legacy-training-level-hidden{display:none!important}
