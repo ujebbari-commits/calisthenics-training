@@ -238,7 +238,9 @@
     const calories=Number(el('nutritionLabelCalories').value);
     const consumedGrams=Number(el('nutritionConsumedGrams').value);
     const allNumbers=[labelGrams,proteinGrams,calories,consumedGrams];
-    if(!name||name.length>120||!validDay(date)||allNumbers.some(x=>!Number.isFinite(x))||
+    const rawValues=['nutritionLabelGrams','nutritionLabelProtein','nutritionLabelCalories','nutritionConsumedGrams'];
+    if(!name||name.length>120||!validDay(date)||rawValues.some(id=>!el(id).value.trim())||
+      allNumbers.some(x=>!Number.isFinite(x))||
       labelGrams<=0||consumedGrams<=0||proteinGrams<0||calories<0){
       status.textContent='食品名・日付・正しいグラム数と栄養値を入力してください。';
       return;
