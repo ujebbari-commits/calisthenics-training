@@ -147,7 +147,7 @@
     el('nutritionLabelGrams').value=food?.labelGrams??'';
     el('nutritionLabelProtein').value=food?.proteinGrams??'';
     el('nutritionLabelCalories').value=food?.calories??'';
-    el('nutritionConsumedGrams').value=food?.labelGrams??'';
+    el('nutritionConsumedGrams').value=food?portionOf(food):'';
   }
   function resetEntryForm(){
     editingId=null;
