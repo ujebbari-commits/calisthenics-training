@@ -587,6 +587,12 @@
     ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><label class="exercise-search"><span>検索</span><input id="exerciseSearchInput" type="search" placeholder="種目名・部位で検索" value="'+esc(ui.exerciseSearch||'')+'"></label><div id="exercisePartFilters" class="exercise-part-filters">'+exercisePartFilters.map(([id,label])=>'<button type="button" data-exercise-part="'+id+'">'+label+'</button>').join('')+'</div><p id="exerciseSearchCount" class="muted exercise-search-count"></p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
     shell.appendChild(ex);
 
+    const nutritionSection=document.createElement('section');
+    nutritionSection.id='nutritionPanel';
+    nutritionSection.className='card nutrition-panel';
+    nutritionSection.dataset.appSection='nutrition';
+    shell.appendChild(nutritionSection);
+
     const exerciseHistoryCard=document.createElement('section');
     exerciseHistoryCard.className='card exercise-log-history-card';
     exerciseHistoryCard.dataset.appSection='history';
@@ -608,7 +614,7 @@
     nav.id='simpleTabs';
     nav.className='simple-tabs';
     nav.innerHTML=[
-      ['today','今日'],['exercises','種目'],['program','プログラム'],['progress','進捗'],['history','履歴'],['settings','設定']
+      ['today','今日'],['exercises','種目'],['program','プログラム'],['progress','進捗'],['nutrition','栄養'],['history','履歴'],['settings','設定']
     ].map(([id,label])=>'<button type="button" data-simple-tab="'+id+'">'+label+'</button>').join('');
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
@@ -696,6 +702,7 @@
       currentWeekCompletedDays:fixedWeekRecords(localDateValue()).map(h=>h.fixedDayKey),
       exercises:exerciseSnapshot,
       exerciseHistory,
+      nutrition:typeof window.trainingNutritionExportData==='function'?window.trainingNutritionExportData():null,
       sessionHistory:Array.isArray(state.history)?state.history:[],
       pendingTodayAdjustments:todayAdjustments,
       weightGoalOverrides:weightGoals,
@@ -736,7 +743,7 @@
   }
 
   function showTab(id){
-    if(!['today','exercises','program','progress','history','settings'].includes(id))id='today';
+    if(!['today','exercises','program','progress','nutrition','history','settings'].includes(id))id='today';
     if(id==='program'){ui.openProgramDay=null;ui.openProgramExercise=null;}
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
