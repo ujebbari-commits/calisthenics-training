@@ -32,7 +32,7 @@
     {id:'pec_fly',goalKg:50,name:'ペクトラル・フライ',desc:'腕を開いた位置から前へ閉じて胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
     {id:'rear_delt',goalKg:40,name:'リア・デルトイド',desc:'腕を後方へ開いて肩の後ろ側を鍛える。同じ複合マシンの逆向き動作。',muscle:'shoulders',label:'肩後部',weight:true,reps:'12'},
     {id:'chest_press',goalKg:60,name:'チェスト・プレス',desc:'座って前へ押して胸を鍛える。',muscle:'chest',label:'胸',weight:true,reps:'12'},
-    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス',desc:'週5回。Day 1〜4はアップ1＋4×5、Day 5はアップ1＋3×5。休憩4分。セーフティを使い、フォームを優先する。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:4,qualifyReps:5,qualifySets:4},
+    {id:'heavy_bench_press',goalKg:80,name:'ベンチプレス',desc:'週5回。Day 1〜4はアップ1＋4×5、Day 5はアップ1＋3×5。休憩4分。セーフティを使い、フォームを優先する。',muscle:'chest',label:'胸・三頭',weight:true,reps:'5',defaultSets:4,qualifyReps:5,qualifySets:3},
     {id:'shoulder_press',goalKg:40,name:'ショルダー・プレス',desc:'座って頭上へ押して肩を鍛える。',muscle:'shoulders',label:'肩',weight:true,reps:'12'},
     {id:'seated_row',goalKg:60,name:'シーテッド・ロー',desc:'座ってハンドルを身体へ引き、背中を鍛える。',muscle:'back',label:'背中',weight:true,reps:'12'},
     {id:'chest_supported_row',goalKg:70,name:'アイソラテラル・ロー',desc:'左右独立のレバーを後方へ引くロー。',muscle:'back',label:'背中',weight:true,reps:'12'},
@@ -47,7 +47,7 @@
     {id:'recumbent_bike',goalMetric:30,name:'リカンベントバイク',desc:'背もたれ付きの座位バイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'upright_bike',goalMetric:30,name:'アップライトバイク',desc:'一般的な直立姿勢のエアロバイク。市ヶ谷店は2台。',muscle:'cardio',label:'有酸素',weight:false,loadLabel:'—',metricLabel:'時間',unit:'分',reps:'10',defaultSets:1},
     {id:'back_extension',name:'バックエクステンション',desc:'背面を伸展して脊柱起立筋を中心に鍛える。市ヶ谷店フリーウェイトエリア。',muscle:'back',label:'腰背部',weight:false,reps:'12'},
-    {id:'deadlift',name:'デッドリフト',desc:'床からバーベルを持ち上げる全身の高負荷種目。脚・臀部・ハムストリング・背中・握力を使う。フォームを優先し、失敗レップまで追い込まない。',muscle:'back',label:'背面・脚',weight:true,reps:'5',defaultSets:3},
+    {id:'deadlift',name:'デッドリフト',desc:'床からバーベルを持ち上げる全身の高負荷種目。脚・臀部・ハムストリング・背中・握力を使う。フォームを優先し、失敗レップまで追い込まない。',muscle:'back',label:'背面・脚',weight:true,reps:'5',defaultSets:3,qualifyReps:5,qualifySets:3},
     {id:'vertical_jump',name:'垂直ジャンプ',desc:'バスケ・バレー復帰に向けた低回数の跳躍練習。各レップを全力に近い質で行い、着地を静かに安定させる。高さや着地の質が落ちたらそのセットを終了する。',muscle:'legs',label:'脚・跳躍',weight:false,reps:'5',defaultSets:3}
   ];
 
@@ -681,10 +681,10 @@
           modeMaxWeightKg:status.max,
           progressPercent:status.pct
         }:null,
-        bestQualifiedWeightKg:weighted?achievedWeight(def):null,
+        bestQualifiedWeightKg:def.weight?achievedWeight(def):null,
         baseLv10GoalKg:Number.isFinite(Number(def.goalKg))?Number(def.goalKg):null,
         baseLv10GoalTime:Number.isFinite(Number(def.goalMetric))?Number(def.goalMetric):null,
-        qualification:weighted?qualificationFor(def):null
+        qualification:def.weight?qualificationFor(def):null
       };
     });
     return {
@@ -902,6 +902,16 @@
     return exerciseHistory.flatMap(r=>{
       if(r.exerciseId!==def.id)return [];
       if(r.recordKind==='big3-detail'||r.recordKind==='set-detail'){
+        // 再設定されたクリア条件で過去のセット別記録も評価する。
+        // 保存時点の qualificationWeight は旧条件で計算されている可能性がある。
+        const details=Array.isArray(r.setsDetail)?r.setsDetail.filter(set=>set.type==='working'):[];
+        if(details.length){
+          const weights=details.filter(set=>Number(set.reps)>=q.reps&&Number.isFinite(Number(set.weight))&&Number(set.weight)>0)
+            .map(set=>Number(set.weight))
+            .sort((a,b)=>def.goalDirection==='down'?a-b:b-a);
+          const weight=weights.length>=q.sets?weights[q.sets-1]:null;
+          return weight!=null?[{...r,weight}]:[];
+        }
         const weight=Number(r.qualificationWeight);
         return Number.isFinite(weight)&&weight>0?[{...r,weight}]:[];
       }
