@@ -516,12 +516,9 @@
     try{
       await prepareTrack(selectedDuration,elapsed);
       if(!running||token!==runToken)return;
-      if(!audioEnabled()){
-        mediaPlaying=false;
-        setMediaSessionState('none');
-        return;
-      }
-      timerAudio.muted=false;
+      // Keep a muted media track running when no output is selected.
+      // This may help countdown continuity under screen lock without speaker sound.
+      timerAudio.muted=!audioEnabled();
       timerAudio.volume=0.28;
       await timerAudio.play();
       if(!running||token!==runToken){
