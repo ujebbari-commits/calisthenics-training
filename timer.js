@@ -23,6 +23,7 @@
   let duration=prefs.duration;
   let remaining=duration;
   let running=false;
+  let runToken=0;
   let endAt=0;
   let tickId=null;
   let wakeLock=null;
@@ -197,7 +198,7 @@
     .timer-card{max-width:680px;width:100%;justify-self:center}
     .timer-card .section-head{margin-bottom:2px}
     .timer-display{font-size:clamp(4rem,16vw,7rem);font-weight:950;letter-spacing:.03em;line-height:1;text-align:center;padding:26px 8px;color:var(--accent);font-variant-numeric:tabular-nums}
-    .timer-presets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .timer-presets{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
     .timer-presets button{border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px 8px;font:inherit;font-weight:800;cursor:pointer}
     .timer-presets button.active{border-color:var(--accent);color:var(--accent);background:var(--surface3)}
     .timer-actions{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:12px}
@@ -237,6 +238,7 @@
       <button type="button" data-timer-seconds="90">90秒</button>
       <button type="button" data-timer-seconds="120">2分</button>
       <button type="button" data-timer-seconds="180">3分</button>
+      <button type="button" data-timer-seconds="240">4分</button>
     </div>
     <div class="timer-actions">
       <button type="button" id="restTimerStartBtn" class="primary">開始</button>
@@ -250,11 +252,11 @@
       <div>
         <strong>タイマー音</strong>
         <p id="restTimerAudioStatus" class="muted"></p>
-        <p class="timer-audio-note">残り時間が10秒単位を通過するたびに短い音、0秒では別の終了音が鳴ります。Web版のため端末やブラウザの省電力設定によっては、ロック中の再生が止められる場合があります。</p>
+        <p class="timer-audio-note">時間ボタンを押すと即開始します。残り10秒ごとに音が鳴り、終了時は対応端末で振動します。Web版のため端末やブラウザの制限により、ロック中は音声・振動が動作しない場合があります。</p>
       </div>
       <div class="timer-audio-actions">
         <button type="button" id="restTimerOutputBtn" class="secondary">出力先を固定</button>
-        <button type="button" id="restTimerTestBtn" class="text-btn">終了音テスト</button>
+        <button type="button" id="restTimerTestBtn" class="text-btn">終了音・振動テスト</button>
       </div>
     </div>
   `;
@@ -402,6 +404,27 @@
     }catch{}
   };
 
+  // Vibration requires a supported browser/device and may be blocked in the background.
+  const vibrateCompletion=()=>{
+    if(typeof navigator.vibrate!=='function')return false;
+    try{return navigator.vibrate([300,140,300,140,500]);}
+    catch{return false;}
+  };
+
+  const finishTimer=()=>{
+    if(!running)return;
+    ++runToken;
+    remaining=0;
+    running=false;
+    endAt=0;
+    stopTick();
+    releaseWakeLock();
+    render();
+    vibrateCompletion();
+    if(!mediaPlaying)playFinalFallback();
+    setMediaSessionState('none');
+  };
+
   const sync=()=>{
     if(!running)return;
 
@@ -411,18 +434,9 @@
     fallbackChimes(previous,remaining);
 
     if(remaining<=0){
-      running=false;
-      endAt=0;
-      stopTick();
-      releaseWakeLock();
-      render();
-
-      if(navigator.vibrate)navigator.vibrate([180,100,180]);
-      if(!mediaPlaying)playFinalFallback();
-      setMediaSessionState('none');
+      finishTimer();
       return;
     }
-
     render();
   };
 
@@ -434,10 +448,11 @@
   const startTimer=async()=>{
     if(running)return;
     if(remaining<=0)remaining=duration;
+    const selectedDuration=duration;
+    const elapsed=Math.max(0,selectedDuration-remaining);
+    const token=++runToken;
 
-    const elapsed=Math.max(0,duration-remaining);
-    await prepareTrack(duration,elapsed);
-
+    // Begin the countdown synchronously on the actual button click.
     endAt=Date.now()+remaining*1000;
     fallbackPreviousRemaining=remaining;
     running=true;
@@ -446,17 +461,25 @@
     render();
 
     try{
+      await prepareTrack(selectedDuration,elapsed);
+      if(!running||token!==runToken)return;
       timerAudio.muted=false;
       await timerAudio.play();
+      if(!running||token!==runToken){
+        timerAudio.pause();
+        return;
+      }
       mediaPlaying=true;
       setMediaSessionState('playing');
     }catch{
+      if(token!==runToken)return;
       mediaPlaying=false;
       setMediaSessionState('none');
     }
   };
 
   const pauseTimer=()=>{
+    ++runToken;
     remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
     running=false;
     endAt=0;
@@ -477,6 +500,7 @@
   };
 
   const reset=()=>{
+    ++runToken;
     running=false;
     endAt=0;
     stopTick();
@@ -552,6 +576,7 @@
   };
 
   const testFinal=async()=>{
+    vibrateCompletion();
     try{
       testAudio.pause();
       testAudio.src=makeFinalTestUrl();
@@ -574,7 +599,11 @@
     }catch{}
   };
 
+  timerAudio.addEventListener('timeupdate',()=>{
+    if(running&&timerAudio.currentTime>=duration)finishTimer();
+  });
   timerAudio.addEventListener('ended',()=>{
+    if(running)finishTimer();
     mediaPlaying=false;
     setMediaSessionState('none');
   });
@@ -587,7 +616,10 @@
   }
 
   card.querySelectorAll('[data-timer-seconds]').forEach(btn=>{
-    btn.addEventListener('click',()=>setDuration(btn.dataset.timerSeconds));
+    btn.addEventListener('click',()=>{
+      setDuration(btn.dataset.timerSeconds);
+      startTimer();
+    });
   });
 
   startBtn.addEventListener('click',startOrPause);
