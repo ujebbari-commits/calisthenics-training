@@ -44,3 +44,15 @@
 .big3-progression input[type=checkbox]{width:18px;height:18px;margin:0;flex:0 0 auto}
 .big3-progression button{justify-self:start}
 @media(max-width:700px){.big3-baselines{grid-template-columns:1fr}.big3-set-row{grid-template-columns:54px minmax(0,1fr);gap:3px 8px}.big3-set-row>strong{grid-column:2;white-space:normal}.big3-week-head{align-items:flex-start}}
+
+/* BIG3 schedule preferences live in the global Settings tab. */
+.big3-settings-section{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);padding:14px}
+.big3-settings-section .section-head{margin:0 0 12px}
+.big3-settings-section h3{margin:0;font-size:1.05rem}
+.big3-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.big3-config-grid label{display:grid;gap:6px;min-width:0}
+.big3-config-grid label>span{color:var(--text);font-size:.81rem;font-weight:800}
+.big3-config-grid select{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-size:.93rem;font-weight:800;padding:10px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:10px}
+.big3-config-help{margin:12px 0 0;color:var(--muted);font-size:.76rem;line-height:1.6}
+.big3-settings-section .big3-message{margin:8px 0 0}
+@media(max-width:520px){.big3-config-grid{grid-template-columns:1fr}}
