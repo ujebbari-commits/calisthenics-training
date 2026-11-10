@@ -9,31 +9,57 @@
     dead:{id:'deadlift',name:'デッドリフト',bar:20,initial:110,reps:5,sets:3}
   };
   // Factors refer to the last completed work-set weight, never 1RM.
-  const DAYS=[
-    {name:'月曜日',focus:'スクワット重点',items:[
-      ['squat','高重量',1,3,5,'2〜3','4〜5分'],
-      ['bench','高重量',1,3,5,'1〜2','3〜5分'],
-      ['dead','軽め・フォーム',.75,2,3,'4以上','2〜3分']
-    ]},
-    {name:'火曜日',focus:'ベンチ軽め',items:[
-      ['bench','軽め・フォーム',.8,3,5,'4以上','2〜3分']
-    ]},
-    {name:'水曜日',focus:'デッドリフト重点',items:[
-      ['dead','高重量',1,3,5,'1〜2','4〜5分'],
-      ['squat','軽め・フォーム',.8,2,5,'4以上','2〜3分'],
-      ['bench','中重量・反復',.9,3,6,'2〜3','3〜4分']
-    ]},
-    {name:'木曜日',focus:'休養',items:[]},
-    {name:'金曜日',focus:'ベンチ強度・下半身中重量',items:[
-      ['bench','強度重視',1.05,3,3,'1〜2','4〜5分'],
-      ['squat','中重量',.9,3,5,'2〜3','3〜4分'],
-      ['dead','中重量',.9,2,5,'2〜3','3〜4分']
-    ]},
-    {name:'土曜日',focus:'ベンチ軽め',items:[
-      ['bench','軽め・スピード',.8,2,6,'4以上','2〜3分']
-    ]},
-    {name:'日曜日',focus:'休養',items:[]}
+  const WEEKDAYS=['月曜日','火曜日','水曜日','木曜日','金曜日','土曜日','日曜日'];
+  const DEFAULT_REST_DAYS=[3,6]; // Thursday + Sunday: 5 available bench days
+  // Templates are [slot-in-the-five-training-days, role, relative intensity,
+  //              sets, reps, target RIR, rest]. Relative intensity is based
+  // on the last completed working weight; it is not % of the one-rep max.
+  const BENCH_TEMPLATES=[
+    ['高重量',1,3,5,'1〜2','3〜5分'],
+    ['軽め・フォーム',.8,3,5,'4以上','2〜3分'],
+    ['中重量・反復',.9,3,6,'2〜3','3〜4分'],
+    ['強度重視',1.05,3,3,'1〜2','4〜5分'],
+    ['軽め・スピード',.8,2,6,'4以上','2〜3分']
   ];
+  const SQUAT_TEMPLATES={
+    1:[[0,'高重量',1,3,5,'2〜3','4〜5分']],
+    2:[[0,'高重量',1,3,5,'2〜3','4〜5分'],[3,'中重量',.9,3,5,'2〜3','3〜4分']],
+    3:[[0,'高重量',1,3,5,'2〜3','4〜5分'],[2,'軽め・フォーム',.8,2,5,'4以上','2〜3分'],[4,'中重量',.9,3,5,'2〜3','3〜4分']]
+  };
+  const DEAD_TEMPLATES={
+    1:[[2,'高重量',1,3,5,'1〜2','4〜5分']],
+    2:[[2,'高重量',1,3,5,'1〜2','4〜5分'],[4,'中重量',.9,2,5,'2〜3','3〜4分']],
+    3:[[0,'軽め・フォーム',.75,2,3,'4以上','2〜3分'],[2,'高重量',1,3,5,'1〜2','4〜5分'],[4,'中重量',.9,2,5,'2〜3','3〜4分']]
+  };
+  function validRestDays(days){
+    return Array.isArray(days)&&days.length===2&&days.every(n=>Number.isInteger(n)&&n>=0&&n<7)&&days[0]!==days[1];
+  }
+  function validFrequency(n){return Number.isInteger(n)&&n>=1&&n<=3;}
+  function createDays(){
+    const rests=new Set(settings.restDays);
+    const active=WEEKDAYS.map((_,i)=>i).filter(i=>!rests.has(i));
+    if(active.length!==5)throw Error('BIG3休養日設定が不正です');
+    const days=WEEKDAYS.map((name,i)=>({name,focus:rests.has(i)?'休養':'',items:[]}));
+    const add=(id,slot,row)=>{
+      const [role,factor,sets,reps,rir,rest]=row;
+      days[active[slot]].items.push([id,role,factor,sets,reps,rir,rest]);
+    };
+    BENCH_TEMPLATES.forEach((row,i)=>add('bench',i,row));
+    SQUAT_TEMPLATES[settings.squatFrequency].forEach(([slot,...row])=>add('squat',slot,row));
+    DEAD_TEMPLATES[settings.deadFrequency].forEach(([slot,...row])=>add('dead',slot,row));
+    for(const d of days){
+      if(!d.items.length)continue;
+      // Heavy squat/deadlift first; lower-priority technique sets afterwards.
+      d.items.sort((a,b)=>{
+        const priority=x=>(x[1]==='高重量'&&x[0]!=='bench')?0:(x[0]==='bench'?1:(x[1]==='中重量'?2:3));
+        return priority(a)-priority(b);
+      });
+      const heavy=d.items.find(x=>x[1]==='高重量'&&x[0]!=='bench');
+      d.focus=heavy?(heavy[0]==='squat'?'スクワット重点':'デッドリフト重点'):
+        (d.items.some(x=>x[0]==='squat'||x[0]==='dead')?'筋力・フォーム練習':'ベンチ重点');
+    }
+    return days;
+  }
   const fmt=v=>Number.isInteger(v)?String(v):String(Math.round(v*100)/100);
   const esc=v=>String(v).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
   const read=(k,fallback)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?fallback:v;}catch{return fallback;}};
@@ -82,11 +108,15 @@
       const m=LIFTS[id],recent=qualifiedHistoryWeight(id);
       weights[id]=platesFor(recent==null?m.initial:recent,m.bar).total;
     }
-    return {version:1,week:1,weights};
+    return {version:1,week:1,weights,restDays:[...DEFAULT_REST_DAYS],squatFrequency:3,deadFrequency:3};
   };
   let settings=read(KEY,null);
   if(!settings||settings.version!==1||!settings.weights)settings=init();
   if(!Number.isInteger(settings.week)||settings.week<1)settings.week=1;
+  // Migrate installations created before the frequency/rest-day options existed.
+  if(!validRestDays(settings.restDays))settings.restDays=[...DEFAULT_REST_DAYS];
+  if(!validFrequency(settings.squatFrequency))settings.squatFrequency=3;
+  if(!validFrequency(settings.deadFrequency))settings.deadFrequency=3;
   for(const id of Object.keys(LIFTS)){
     const bar=LIFTS[id].bar,v=Number(settings.weights[id]);
     if(!Number.isFinite(v)||v<bar||v>maxWeight(bar))settings.weights[id]=LIFTS[id].initial;
@@ -102,7 +132,7 @@
       .filter(x=>{if(x.total>=total||seen.has(x.total))return false;seen.add(x.total);return true;});
   }
   function plan(){
-    return DAYS.map(day=>({...day,items:day.items.map(([id,role,factor,sets,reps,rir,rest])=>{
+    return createDays().map(day=>({...day,items:day.items.map(([id,role,factor,sets,reps,rir,rest])=>{
       const meta=LIFTS[id],work=platesFor(settings.weights[id]*factor,meta.bar);
       return {id,name:meta.name,bar:meta.bar,role,factor,sets,reps,rir,rest,work,warmups:warmups(id,work.total,role)};
     })}));
@@ -132,6 +162,57 @@
       (day.items.length?'<div class="big3-day-lifts">'+day.items.map(liftCard).join('')+'</div>':'')+
       '</article>';
   }
+  let rerenderPlan=()=>{};
+  let rerenderSettings=()=>{};
+  function updateSchedule(next){
+    if(!validRestDays(next.restDays)||
+      !validFrequency(next.squatFrequency)||!validFrequency(next.deadFrequency))return false;
+    settings.restDays=[...next.restDays];
+    settings.squatFrequency=next.squatFrequency;
+    settings.deadFrequency=next.deadFrequency;
+    save();
+    rerenderPlan();
+    rerenderSettings();
+    return true;
+  }
+  function mountSettings(root){
+    if(!root||root.dataset.big3SettingsMounted)return;
+    root.dataset.big3SettingsMounted='true';
+    const options=WEEKDAYS.map((name,i)=>'<option value="'+i+'">'+name+'</option>').join('');
+    const frequencies=[1,2,3].map(n=>'<option value="'+n+'">週'+n+'回</option>').join('');
+    root.innerHTML='<div class="big3-config-grid">'+
+      '<label><span>休養日 1</span><select data-big3-rest="0">'+options+'</select></label>'+
+      '<label><span>休養日 2</span><select data-big3-rest="1">'+options+'</select></label>'+
+      '<label><span>スクワットの頻度</span><select data-big3-frequency="squat">'+frequencies+'</select></label>'+
+      '<label><span>デッドリフトの頻度</span><select data-big3-frequency="dead">'+frequencies+'</select></label>'+
+      '</div><p class="big3-config-help">ベンチは週5回固定のため休養日は2日です。選んだ休養日にはBIG3を配置しません。頻度を変更すると週間メニューを自動再計算します。</p>'+
+      '<p id="big3ConfigMessage" class="big3-message" role="status" aria-live="polite"></p>';
+    const render=()=>{
+      for(let i=0;i<2;i++)root.querySelector('[data-big3-rest="'+i+'"]').value=String(settings.restDays[i]);
+      root.querySelector('[data-big3-frequency="squat"]').value=String(settings.squatFrequency);
+      root.querySelector('[data-big3-frequency="dead"]').value=String(settings.deadFrequency);
+    };
+    rerenderSettings=render;
+    const status=msg=>{root.querySelector('#big3ConfigMessage').textContent=msg;};
+    root.querySelectorAll('[data-big3-rest]').forEach(input=>input.addEventListener('change',()=>{
+      const i=Number(input.dataset.big3Rest),newDay=Number(input.value);
+      const restDays=[...settings.restDays];
+      const other=1-i;
+      // Selecting the other rest day swaps the values instead of making an invalid duplicate.
+      if(newDay===restDays[other])restDays[other]=restDays[i];
+      restDays[i]=newDay;
+      if(updateSchedule({...settings,restDays})){
+        status('休養日を変更し、BIG3の週間メニューを再計算しました。');
+      }else{render();status('休養日を変更できませんでした。');}
+    }));
+    root.querySelectorAll('[data-big3-frequency]').forEach(input=>input.addEventListener('change',()=>{
+      const key=input.dataset.big3Frequency==='squat'?'squatFrequency':'deadFrequency';
+      if(updateSchedule({...settings,[key]:Number(input.value)})){
+        status('週の実施回数を変更し、BIG3の週間メニューを再計算しました。');
+      }else{render();status('回数は週1〜3回を選択してください。');}
+    }));
+    render();
+  }
   function mount(root){
     if(!root||root.dataset.big3Mounted)return;
     root.dataset.big3Mounted='true';
@@ -144,7 +225,7 @@
     const checkboxes=Object.keys(LIFTS).map(id=>'<label><input type="checkbox" data-big3-done="'+id+'"><span>'+
       LIFTS[id].name+'：+2.5kg</span></label>').join('');
     root.innerHTML='<div class="section-head"><div><p class="eyebrow">BIG3 STRENGTH</p><h2>BIG3 · 筋力プランナー</h2></div><span class="pill" id="big3WeekBadge"></span></div>'+
-      '<div class="big3-root"><p class="big3-note">ベンチ週5日、スクワット週3日、デッド週3日。ほかの種目は無視し、筋力重視で強度を分散した独立プランです。</p>'+
+      '<div class="big3-root"><p id="big3ScheduleInfo" class="big3-note"></p>'+
       '<div class="big3-baselines">'+forms+'</div>'+
       '<div class="big3-toolbar"><button type="button" id="big3Recalculate" class="primary">週間メニューを計算</button>'+
       '<button type="button" id="big3HistoryLoad" class="secondary">記録から重量を取得</button></div>'+
@@ -160,6 +241,7 @@
       const el=root.querySelector('#big3Message');el.textContent=text;el.classList.toggle('error',isError);
     };
     const render=()=>{
+      root.querySelector('#big3ScheduleInfo').textContent='ベンチ週5回・スクワット週'+settings.squatFrequency+'回・デッド週'+settings.deadFrequency+'回。休養日：'+settings.restDays.map(i=>WEEKDAYS[i]).join('・')+'。設定タブから変更できます。ほかの種目を考慮しない独立メニューです。';
       root.querySelector('#big3WeekBadge').textContent='第'+settings.week+'週';
       root.querySelector('#big3WeekTitle').textContent='第'+settings.week+'週 · 週間メニュー';
       const p=plan(),count={bench:0,squat:0,dead:0};
@@ -201,7 +283,8 @@
       msg('第'+settings.week+'週を作成しました。'+(selected.length?'チェックした種目のみ増量しました。':'重量は据え置きです。'));
       root.scrollIntoView({behavior:'smooth',block:'start'});
     });
+    rerenderPlan=render;
     render();
   }
-  window.TrainingBig3={mount,platesFor,qualifiedHistoryWeight,plan,getSettings:()=>JSON.parse(JSON.stringify(settings))};
+  window.TrainingBig3={mount,mountSettings,updateSchedule,platesFor,qualifiedHistoryWeight,plan,getSettings:()=>JSON.parse(JSON.stringify(settings))};
 })();
