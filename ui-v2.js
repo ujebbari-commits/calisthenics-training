@@ -611,11 +611,13 @@
     settingsCard.dataset.appSection='settings';
 
     settingsCard.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">SETTINGS</p><h2>設定</h2></div></div>'+
+      '<section class="big3-settings-section"><div class="section-head"><div><p class="eyebrow">BIG3 SETTINGS</p><h3>BIG3 · 週間スケジュール</h3></div></div><div id="big3PlannerSettings"></div></section>'+
       '<div class="fixed-program-rules"><strong>固定週5日プログラム</strong><p class="muted">全体アップ10分（トレッドミル5分＋動的ストレッチ）、BIG3はアップ1＋本番・休憩4分、補助は休憩2分、最後にストレッチ5分。重量アップは週単位。</p></div>'+
       '<div class="settings-share-box"><div><strong>ChatGPTにトレーニング情報を共有</strong><p class="muted">トレーニング履歴・種目設定・栄養記録を含むJSONファイルをダウンロードします。保存したファイルをChatGPTに添付してください。</p></div>'+
       '<button type="button" id="shareTrainingDataBtn" class="primary">共有</button><p id="shareTrainingDataStatus" class="settings-share-status" aria-live="polite"></p></div>';
 
     shell.appendChild(settingsCard);
+    if(window.TrainingBig3)window.TrainingBig3.mountSettings(settingsCard.querySelector('#big3PlannerSettings'));
 
     const nav=document.createElement('nav');
     nav.id='simpleTabs';
