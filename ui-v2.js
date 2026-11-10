@@ -587,6 +587,13 @@
     ex.innerHTML='<div class="section-head simple-head"><div><p class="eyebrow">EXERCISES</p><h2>種目</h2></div></div><label class="exercise-search"><span>検索</span><input id="exerciseSearchInput" type="search" placeholder="種目名・部位で検索" value="'+esc(ui.exerciseSearch||'')+'"></label><div id="exercisePartFilters" class="exercise-part-filters">'+exercisePartFilters.map(([id,label])=>'<button type="button" data-exercise-part="'+id+'">'+label+'</button>').join('')+'</div><p id="exerciseSearchCount" class="muted exercise-search-count"></p><div id="simpleExerciseList" class="simple-exercise-list"></div>';
     shell.appendChild(ex);
 
+    const big3Card=document.createElement('section');
+    big3Card.id='big3PlannerPanel';
+    big3Card.className='card big3-planner-panel';
+    big3Card.dataset.appSection='big3';
+    shell.appendChild(big3Card);
+    if(window.TrainingBig3)window.TrainingBig3.mount(big3Card);
+
     const nutritionSection=document.createElement('section');
     nutritionSection.id='nutritionPanel';
     nutritionSection.className='card nutrition-panel';
@@ -614,7 +621,7 @@
     nav.id='simpleTabs';
     nav.className='simple-tabs';
     nav.innerHTML=[
-      ['today','今日'],['exercises','種目'],['program','プログラム'],['progress','進捗'],['nutrition','栄養'],['history','履歴'],['settings','設定']
+      ['today','今日'],['exercises','種目'],['program','プログラム'],['big3','BIG3'],['progress','進捗'],['nutrition','栄養'],['history','履歴'],['settings','設定']
     ].map(([id,label])=>'<button type="button" data-simple-tab="'+id+'">'+label+'</button>').join('');
     header.insertAdjacentElement('afterend',nav);
     nav.addEventListener('click',e=>{const b=e.target.closest('[data-simple-tab]');if(b)showTab(b.dataset.simpleTab)});
@@ -744,7 +751,7 @@
   }
 
   function showTab(id){
-    if(!['today','exercises','program','progress','nutrition','history','settings'].includes(id))id='today';
+    if(!['today','exercises','program','big3','progress','nutrition','history','settings'].includes(id))id='today';
     if(id==='program'){ui.openProgramDay=null;ui.openProgramExercise=null;}
     ui.tab=id;saveUi();
     document.querySelectorAll('[data-app-section]').forEach(el=>el.classList.toggle('app-section-hidden',el.dataset.appSection!==id));
@@ -1457,7 +1464,7 @@
     .ui-redundant,.legacy-training-level-hidden{display:none!important}
     .app-section-hidden{display:none!important}
     .shell{grid-template-columns:minmax(0,1fr)}.shell > [data-app-section]{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
-    .simple-tabs{position:sticky;top:0;z-index:80;width:100%;max-width:1180px;box-sizing:border-box;margin:0 auto;padding:8px 20px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;overflow-x:auto;background:var(--bg)}
+    .simple-tabs{position:sticky;top:0;z-index:80;width:100%;max-width:1180px;box-sizing:border-box;margin:0 auto;padding:8px 20px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;overflow-x:auto;background:var(--bg)}
     .simple-tabs button{width:100%;min-width:0;height:44px;min-height:44px;display:flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:0 6px;border-radius:999px;font:inherit;font-size:.85rem;font-weight:800;cursor:pointer}
     .simple-tabs button.active{background:var(--accent);color:#07110c;border-color:var(--accent)}
     .legacy-program-hidden,.legacy-level-map-hidden{display:none!important}.simple-head{margin-bottom:6px}.exercise-search{display:grid;gap:6px;margin-top:10px;color:var(--muted);font-size:.76rem}.exercise-search input{width:100%;font-size:1rem}.exercise-part-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.exercise-part-filters button{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:999px;padding:7px 11px;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}.exercise-part-filters button.active{background:var(--accent);border-color:var(--accent);color:#07110c}.exercise-search-count{margin:8px 0 0;font-size:.76rem}.simple-exercise-list{display:grid;gap:8px;margin-top:10px}
